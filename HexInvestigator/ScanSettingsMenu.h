@@ -5,7 +5,7 @@
 class ScanSettingsMenu : public wxFrame
 {
 public:
-	ScanSettingsMenu(wxWindow*);
+	ScanSettingsMenu();
 
 	wxStaticText* protectionLabel = nullptr;
 	wxCheckListBox* protectChoice = nullptr;

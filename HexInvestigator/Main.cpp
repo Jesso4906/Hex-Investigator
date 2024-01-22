@@ -2,7 +2,7 @@
 
 wxBEGIN_EVENT_TABLE(Main, wxFrame)
 EVT_CLOSE(CloseApp)
-EVT_BUTTON(SelectProcessID, SelectProcess)
+EVT_BUTTON(SelectProcessID, OpenSelectProcessMenu)
 EVT_CHOICE(SelectValueTypeID, UpdateValueType)
 EVT_GRID_CELL_RIGHT_CLICK(RightClickOptions)
 EVT_CHOICE(SelectScanTypeID, UpdateScanType)
@@ -24,6 +24,8 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	selectProc = new wxButton(this, SelectProcessID, "P", wxPoint(0, 0), wxSize(25, 25));
 	selectProc->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	selectProc->SetOwnForegroundColour(wxColour(220, 220, 220));
+
+	selectProcMenu = new SelectProcessMenu(this);
 
 	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(11, typeStrs));
 	selectValueType->SetSelection(1);
@@ -68,7 +70,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	nextScan->SetOwnForegroundColour(wxColour(220, 220, 220));
 	nextScan->Disable();
 
-	scanSettingsMenu = new ScanSettingsMenu(this);
+	scanSettingsMenu = new ScanSettingsMenu();
 
 	scanSettingsButton = new wxButton(this, ScanSettingsID, "Scan Settings", wxPoint(0, 0), wxSize(100, 25));
 	scanSettingsButton->SetOwnBackgroundColour(wxColour(60, 60, 60));
@@ -164,8 +166,6 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 }
 
 // memory scan functions
-
-// do multi threading
 
 template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
@@ -531,6 +531,13 @@ template <typename T> void Main::UpdateList(bool isFloat)
 	{
 		if (i == -1 || !addrList->IsVisible(i, 0, false)) { break; }
 
+		/*
+		if (IsAddressStatic(addressPool[i])) 
+		{
+			addrList->SetCellTextColour(i, 0, wxColour(250, 200, 0));
+		}
+		*/
+
 		T value;
 		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], &value, sizeof(T), 0);
 
@@ -632,48 +639,64 @@ bool Main::ParseByteArray(wxString str, unsigned char** bytes)
 	return true;
 }
 
-void Main::SelectProcess(wxCommandEvent& e)
+/*
+bool Main::IsAddressStatic(unsigned long long address)
 {
-	std::vector<std::wstring> names;
-	std::vector<DWORD> ids;
-	int count = 0;
-	HANDLE procSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-	if (procSnap != INVALID_HANDLE_VALUE)
-	{
-		PROCESSENTRY32 procEntry;
-		procEntry.dwSize = sizeof(procEntry);
+	// find the module that the address is located in
+	HANDLE modSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetProcessId(procHandle)));
 
-		if (Process32First(procSnap, &procEntry))
+	if (modSnap != INVALID_HANDLE_VALUE)
+	{
+		MODULEENTRY32 modEntry;
+		modEntry.dwSize = sizeof(modEntry);
+
+		if (Module32First(modSnap, &modEntry))
 		{
 			do
 			{
-				if (!_wcsicmp(procEntry.szExeFile, L"svchost.exe")) { continue; }
+				unsigned long long modBase = (unsigned long long)modEntry.modBaseAddr;
 
-				names.push_back(std::wstring(procEntry.szExeFile) + L" (" + std::to_wstring(procEntry.th32ProcessID) + L")");
-				ids.push_back(procEntry.th32ProcessID);
+				if (address > modBase && address < (modBase + modEntry.modBaseSize))
+				{
+					// get the location of the module's IMAGE_NT_HEADERS structure
+					IMAGE_NT_HEADERS* imageNTHeaders = ImageNtHeader(modEntry.hModule);
 
-				count++;
-			} while (Process32Next(procSnap, &procEntry));
+					// the section table immediately follows the IMAGE_NT_HEADERS
+					IMAGE_SECTION_HEADER* sectionInfo = (IMAGE_SECTION_HEADER*)(imageNTHeaders + 1);
+
+					for (int i = 0; i < imageNTHeaders->FileHeader.NumberOfSections; i++) // loop through each section of the module
+					{
+						if (address > sectionInfo->VirtualAddress && address < (sectionInfo->VirtualAddress + sectionInfo->Misc.VirtualSize))
+						{
+							return sectionInfo->Characteristics == IMAGE_SCN_CNT_INITIALIZED_DATA;
+						}
+
+						sectionInfo++;
+					}
+
+					break;
+				}
+			} while (Module32Next(modSnap, &modEntry));
 		}
 	}
-	CloseHandle(procSnap);
+	CloseHandle(modSnap);
 
-	std::vector<const wchar_t*> cStrArray;
-	cStrArray.reserve(names.size());
-	for (int i = 0; i < names.size(); i++)
-	{
-		cStrArray.push_back(names[i].c_str());
-	}
+	return false;
+}
+*/
 
-	wxArrayString* list = new wxArrayString(count, cStrArray.data());
-	int proc = wxGetSingleChoiceIndex("All Processes", "Open Process", *list, this);
-	delete list;
+// gui functions
 
-	if (proc == -1) { return; }
+void Main::OpenSelectProcessMenu(wxCommandEvent& e)
+{
+	selectProcMenu->OpenMenu(GetPosition());
+}
 
+void Main::UpdateProcessSelection(DWORD procId) 
+{
 	ResetScan();
 
-	procHandle = OpenProcess(PROCESS_ALL_ACCESS, NULL, ids[proc]);
+	procHandle = OpenProcess(PROCESS_ALL_ACCESS, NULL, procId);
 
 	savedMenu->procHandle = procHandle;
 	breakpointMenu->procHandle = procHandle;
@@ -684,13 +707,16 @@ void Main::SelectProcess(wxCommandEvent& e)
 	openBreakpointer->Enable();
 }
 
-// gui functions
-
 void Main::FirstScanButtonPress(wxCommandEvent& e)
 {
 	if (scanning)
 	{
-		ResetScan(); // Reset if first scan button is pressed while already scanning
+		// Reset if first scan button is pressed while already scanning
+		
+		int answer = wxMessageBox("Are you sure you want to reset the scan?", "Reset Scan", wxYES_NO, this);
+		if (answer == wxNO) { return; }
+
+		ResetScan();
 		return;
 	}
 	
@@ -1587,6 +1613,8 @@ void Main::UpdateScanType(wxCommandEvent& e)
 
 void Main::CloseApp(wxCloseEvent& e)
 {
+	selectProcMenu->Destroy();
+
 	scanSettingsMenu->Destroy();
 
 	delete savedMenu->updateTimer;
@@ -1598,4 +1626,146 @@ void Main::CloseApp(wxCloseEvent& e)
 	delete updateTimer;
 
 	Destroy();
+}
+
+
+// select proc menu
+
+wxBEGIN_EVENT_TABLE(SelectProcessMenu, wxFrame)
+EVT_CLOSE(CloseMenu)
+EVT_TEXT(ProcessNameInputID, SearchProcessList)
+EVT_LISTBOX_DCLICK(ProcessListID, SelectProcess)
+wxEND_EVENT_TABLE()
+
+SelectProcessMenu::SelectProcessMenu(Main* mainPtr) : wxFrame(nullptr, MainWindowID, "Select Process", wxPoint(50, 50), wxSize(400, 400))
+{
+	main = mainPtr;
+
+	SetOwnBackgroundColour(wxColour(35, 35, 35));
+
+	processNameInput = new wxTextCtrl(this, ProcessNameInputID, "", wxPoint(0, 0), wxSize(9999, 25));
+	processNameInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	processNameInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+
+	processList = new wxListBox(this, ProcessListID, wxPoint(0, 0), wxSize(9999, 9999));
+	processList->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	processList->SetOwnForegroundColour(wxColour(220, 220, 220));
+
+	vSizer = new wxBoxSizer(wxVERTICAL);
+
+	vSizer->Add(processNameInput, 0, wxALL, 10);
+	vSizer->Add(processList, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
+
+	SetSizer(vSizer);
+}
+
+void SelectProcessMenu::RefreshProcessList()
+{
+	processList->Clear();
+
+	originalProcIds.clear();
+	originalProcIds.shrink_to_fit();
+
+	std::vector<std::wstring> names;
+	int count = 0;
+	HANDLE procSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+	if (procSnap != INVALID_HANDLE_VALUE)
+	{
+		PROCESSENTRY32 procEntry;
+		procEntry.dwSize = sizeof(procEntry);
+
+		if (Process32First(procSnap, &procEntry))
+		{
+			do
+			{
+				if (!_wcsicmp(procEntry.szExeFile, L"svchost.exe")) { continue; }
+
+				names.push_back(std::wstring(procEntry.szExeFile) + L" (" + std::to_wstring(procEntry.th32ProcessID) + L")");
+				originalProcIds.push_back(procEntry.th32ProcessID);
+
+				count++;
+			} while (Process32Next(procSnap, &procEntry));
+		}
+	}
+	CloseHandle(procSnap);
+
+	std::vector<const wchar_t*> cStrArray;
+	cStrArray.reserve(names.size());
+	for (int i = 0; i < names.size(); i++)
+	{
+		cStrArray.push_back(names[i].c_str());
+	}
+
+	processNames = new wxArrayString(count, cStrArray.data());
+	processList->InsertItems(*processNames, 0);
+
+	currentProcIds = originalProcIds;
+}
+
+void SelectProcessMenu::SearchProcessList(wxCommandEvent& e)
+{
+	wxString input = processNameInput->GetValue();
+	unsigned int inputLen = input.Length();
+
+	if (input.IsEmpty())
+	{
+		RefreshProcessList();
+		return;
+	}
+
+	processList->Clear();
+
+	currentProcIds.clear();
+	currentProcIds.shrink_to_fit();
+
+	int lastIndex = 0;
+
+	for (int i = 0; i < processNames->GetCount(); i++)
+	{
+		unsigned int currentNameLen = processNames->Item(i).Length();
+
+		for (int j = 0; j < currentNameLen; j++)
+		{
+			for (int k = 0; k < inputLen; k++)
+			{
+				if (processNames->Item(i).GetChar(j + k) != input.GetChar(k))
+				{
+					break;
+				}
+				else if (k == inputLen - 1)
+				{
+					processList->InsertItems(1, &(processNames->Item(i)), lastIndex);
+					currentProcIds.push_back(originalProcIds[i]);
+					lastIndex++;
+				}
+			}
+		}
+	}
+}
+
+void SelectProcessMenu::SelectProcess(wxCommandEvent& e)
+{
+	main->UpdateProcessSelection(currentProcIds[processList->GetSelection()]);
+
+	// close 
+	wxCloseEvent* e2 = (wxCloseEvent*)0;
+	CloseMenu(*e2);
+}
+
+void SelectProcessMenu::OpenMenu(wxPoint position)
+{
+	SetPosition(position);
+	Show();
+
+	RefreshProcessList();
+}
+
+void SelectProcessMenu::CloseMenu(wxCloseEvent& e)
+{
+	Hide();
+
+	delete processNames;
+
+	originalProcIds.clear();
+	originalProcIds.shrink_to_fit();
 }

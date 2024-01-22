@@ -2,6 +2,8 @@
 #include "Utils.h"
 #include <wx/grid.h>
 #include "TLHelp32.h"
+//#include "dbghelp.h"
+//#pragma comment( lib, "dbghelp.lib" )
 #include <iomanip>
 #include <numeric>
 #include <sstream>
@@ -10,12 +12,16 @@
 #include "SavedMenu.h"
 #include "BreakpointMenu.h"
 
+class SelectProcessMenu; // forward delcared becasue it needs to access the Main class
+
 class Main : public wxFrame, public Utils
 {
 public:
 	Main(); // constructor
 
 	wxButton* selectProc = nullptr;
+	SelectProcessMenu* selectProcMenu = nullptr;
+
 	wxChoice* selectValueType = nullptr;
 	wxChoice* selectScanType = nullptr;
 	wxButton* firstScan = nullptr;
@@ -120,9 +126,6 @@ public:
 
 	bool performedAllScan = false;
 
-	void SelectProcess(wxCommandEvent& e);
-
-
 	template <typename T> unsigned int FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
 	unsigned int FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<unsigned long long>* addressesPtr);
 	template <typename T> unsigned int FirstScanAll(MemoryScanSettings scanSettings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
@@ -138,7 +141,12 @@ public:
 	template <typename T> void UpdateList(bool isFloat);
 	void UpdateListByteArray(int size);
 
+	//bool IsAddressStatic(unsigned long long address);
+
 	// gui functions
+
+	void OpenSelectProcessMenu(wxCommandEvent& e);
+	void UpdateProcessSelection(DWORD procId);
 
 	void ResetScan();
 
@@ -172,6 +180,46 @@ public:
 	void ManuallyUpdate(wxCommandEvent& e);
 
 	void CloseApp(wxCloseEvent& e);
+
+	wxDECLARE_EVENT_TABLE();
+};
+
+class SelectProcessMenu : public wxFrame, public Utils
+{
+public:
+	SelectProcessMenu(Main* mainPtr);
+
+	Main* main = nullptr;
+
+	wxTextCtrl* processNameInput = nullptr;
+
+	wxListBox* processList = nullptr;
+
+	wxBoxSizer* vSizer = nullptr;
+
+	wxArrayString* processNames = nullptr;
+
+	std::vector<DWORD> originalProcIds;
+	std::vector<DWORD> currentProcIds; // after search
+
+	DWORD chosenProc = 0;
+
+	enum ids
+	{
+		MainWindowID,
+		ProcessNameInputID,
+		ProcessListID
+	};
+
+	void RefreshProcessList();
+
+	void SearchProcessList(wxCommandEvent& e);
+
+	void SelectProcess(wxCommandEvent& e);
+
+	void OpenMenu(wxPoint position);
+
+	void CloseMenu(wxCloseEvent& e);
 
 	wxDECLARE_EVENT_TABLE();
 };

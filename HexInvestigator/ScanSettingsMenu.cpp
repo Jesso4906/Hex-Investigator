@@ -10,7 +10,7 @@ EVT_TEXT_ENTER(MinAddressInputID, UpdateMinOnTextEnter)
 EVT_TEXT_ENTER(MaxAddressInputID, UpdateMaxOnTextEnter)
 wxEND_EVENT_TABLE()
 
-ScanSettingsMenu::ScanSettingsMenu(wxWindow* parent) : wxFrame(parent, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(780, 175))
+ScanSettingsMenu::ScanSettingsMenu() : wxFrame(nullptr, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(780, 175))
 {
 	this->SetOwnBackgroundColour(wxColour(35, 35, 35));
 

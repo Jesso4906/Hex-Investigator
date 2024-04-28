@@ -9,6 +9,7 @@ EVT_CHOICE(SelectScanTypeID, UpdateScanType)
 EVT_BUTTON(FirstScanID, FirstScanButtonPress)
 EVT_BUTTON(NextScanID, NextScanButtonPress)
 EVT_TIMER(UpdateTimerID, UpdateListOnTimer)
+EVT_TIMER(KeyInputTimerID, CheckKeyInput)
 EVT_BUTTON(ScanSettingsID, OpenScanSettings)
 EVT_CHECKBOX(ManualUpdateToggleID, ToggleManualUpdate)
 EVT_BUTTON(ManualUpdateButtonID, ManuallyUpdate)
@@ -163,6 +164,9 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	SetSizer(vSizer);
 
 	updateTimer = new wxTimer(this, UpdateTimerID);
+
+	keyInputTimer = new wxTimer(this, KeyInputTimerID);
+	keyInputTimer->Start(100);
 }
 
 // memory scan functions
@@ -790,6 +794,19 @@ void Main::FreezeProcess(bool freeze)
 }
 
 // gui functions
+
+void Main::CheckKeyInput(wxTimerEvent& e)
+{
+	if(scanSettingsMenu->scanKeybind == -1) { return; }
+	
+	wxCommandEvent empty = 0;
+	
+	if (GetAsyncKeyState(scanSettingsMenu->scanKeybind) & 1) // K
+	{
+		if (scanning) { NextScanButtonPress(empty); }
+		else { FirstScanButtonPress(empty); }
+	}
+}
 
 void Main::OpenSelectProcessMenu(wxCommandEvent& e)
 {
@@ -1771,6 +1788,7 @@ void Main::CloseApp(wxCloseEvent& e)
 	breakpointMenu->Destroy();
 
 	delete updateTimer;
+	delete keyInputTimer;
 
 	Destroy();
 }

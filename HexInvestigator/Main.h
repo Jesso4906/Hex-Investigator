@@ -61,6 +61,7 @@ public:
 	wxBoxSizer* vSizer = nullptr;
 
 	wxTimer* updateTimer = nullptr;
+	wxTimer* keyInputTimer = nullptr;
 
 	HANDLE procHandle = 0;
 
@@ -79,7 +80,8 @@ public:
 		AddressListID,
 		OpenSavedListID,
 		OpenBreakpointMenuID,
-		UpdateTimerID
+		UpdateTimerID,
+		KeyInputTimerID
 	};
 
 	struct MemoryScanSettings
@@ -173,6 +175,8 @@ public:
 	void NextScanButtonPress(wxCommandEvent& e);
 
 	void UpdateListOnTimer(wxTimerEvent& e);
+
+	void CheckKeyInput(wxTimerEvent& e);
 
 	void WriteValueHandler(wxString input, unsigned long long* address);
 

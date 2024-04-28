@@ -9,9 +9,10 @@ EVT_LISTBOX(MemoryTypeListID, DeselectType)
 EVT_TEXT_ENTER(MinAddressInputID, UpdateMinOnTextEnter)
 EVT_TEXT_ENTER(MaxAddressInputID, UpdateMaxOnTextEnter)
 EVT_CHOICE(SelectModuleID, UpdateSelectedModule)
+EVT_CHOICE(SelectKeybindID, UpdateSelectedKeybind)
 wxEND_EVENT_TABLE()
 
-ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(700, 200))
+ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(700, 250))
 {
 	procHandle = hProc;
 	
@@ -50,6 +51,14 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	freezeProcess->SetValue(false);
 	freezeProcess->SetOwnForegroundColour(wxColour(220, 220, 220));
 
+	scanKeybindLabel = new wxStaticText(this, wxID_ANY, "First/next scan keybind:");
+	scanKeybindLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+
+	scanKeybindSelect = new wxChoice(this, SelectKeybindID, wxPoint(0, 0), wxSize(150, 25), wxArrayString(62, keyStrs));
+	scanKeybindSelect->SetSelection(0);
+	scanKeybindSelect->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	scanKeybindSelect->SetOwnForegroundColour(wxColour(220, 220, 220));
+
 	minAddrTxt = new wxStaticText(this, wxID_ANY, "Min address:");
 	minAddrTxt->SetOwnForegroundColour(wxColour(220, 220, 220));
 
@@ -83,6 +92,8 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	column2Sizer->Add(typeChoice, 0, wxLEFT | wxRIGHT, 10);
 	column2Sizer->Add(alignMemory, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column2Sizer->Add(freezeProcess, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column2Sizer->Add(scanKeybindLabel, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column2Sizer->Add(scanKeybindSelect, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 
 	column3Sizer->Add(minAddrTxt, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column3Sizer->Add(minAddrInput, 0, wxLEFT | wxRIGHT, 10);
@@ -195,6 +206,11 @@ void ScanSettingsMenu::UpdateModuleAddresses()
 	CloseHandle(modSnap);
 
 	moduleSelect->SetSelection(previousSelection);
+}
+
+void ScanSettingsMenu::UpdateSelectedKeybind(wxCommandEvent& e)
+{
+	scanKeybind = keyCodes[e.GetSelection()];
 }
 
 bool ScanSettingsMenu::UpdateMin()

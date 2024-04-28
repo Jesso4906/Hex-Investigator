@@ -65,6 +65,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 
 	addrList->CreateGrid(0, 2);
 	addrList->EnableGridLines(false);
+	addrList->SetSelectionMode(wxGrid::wxGridSelectionModes::wxGridSelectRows);
 	addrList->SetScrollRate(0, 10);
 	addrList->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	addrList->DisableDragRowSize();
@@ -298,6 +299,7 @@ void BreakpointMenu::DetachDebugger(wxCommandEvent& e)
 	shbpReadWrite->Disable();
 	shbpExecute->Disable();
 
+	addressInput->SetValue("");
 	addressInput->Disable();
 	selectSize->Disable();
 
@@ -350,7 +352,7 @@ void BreakpointMenu::SetWriteBP(wxCommandEvent& e)
 	addressInput->Disable();
 	selectSize->Disable();
 
-	addrList->DeleteRows(0, addrList->GetNumberRows());
+	ClearList();
 }
 
 void BreakpointMenu::SetReadWriteBP(wxCommandEvent& e)
@@ -379,7 +381,7 @@ void BreakpointMenu::SetReadWriteBP(wxCommandEvent& e)
 	addressInput->Disable();
 	selectSize->Disable();
 
-	addrList->DeleteRows(0, addrList->GetNumberRows());
+	ClearList();
 }
 
 void BreakpointMenu::SetExecuteBP(wxCommandEvent& e)
@@ -408,7 +410,7 @@ void BreakpointMenu::SetExecuteBP(wxCommandEvent& e)
 	addressInput->Disable();
 	selectSize->Disable();
 
-	addrList->DeleteRows(0, addrList->GetNumberRows());
+	ClearList();
 }
 
 void BreakpointMenu::AddAddressToList(unsigned long long address)
@@ -438,6 +440,14 @@ void BreakpointMenu::AddAddressToList(unsigned long long address)
 	addrList->SetCellValue(row, 0, addressToHex.str());
 
 	addrList->SetCellValue(row, 1, "1");
+}
+
+void BreakpointMenu::ClearList() 
+{
+	int rows = addrList->GetNumberRows();
+	if (rows > 0) { addrList->DeleteRows(0, rows); }
+	entries.clear();
+	entries.shrink_to_fit();
 }
 
 void BreakpointMenu::RightClickOptions(wxGridEvent& e)

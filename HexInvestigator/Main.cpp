@@ -70,7 +70,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	nextScan->SetOwnForegroundColour(wxColour(220, 220, 220));
 	nextScan->Disable();
 
-	scanSettingsMenu = new ScanSettingsMenu();
+	scanSettingsMenu = new ScanSettingsMenu(procHandle);
 
 	scanSettingsButton = new wxButton(this, ScanSettingsID, "Scan Settings", wxPoint(0, 0), wxSize(100, 25));
 	scanSettingsButton->SetOwnBackgroundColour(wxColour(60, 60, 60));
@@ -97,16 +97,16 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	addrList->CreateGrid(0, 3);
 	addrList->EnableGridLines(false);
+	addrList->SetSelectionMode(wxGrid::wxGridSelectionModes::wxGridSelectRows);
 	addrList->SetScrollRate(0, 10);
 	addrList->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	addrList->DisableDragRowSize();
-	addrList->DisableDragColSize();
 	addrList->EnableEditing(false);
 	addrList->SetColLabelValue(0, "Address");
 	addrList->SetColLabelValue(1, "Offset");
 	addrList->SetColLabelValue(2, "Value");
 	addrList->HideRowLabels();
-	addrList->SetColSize(0, 80);
+	addrList->SetColSize(0, 200);
 	addrList->SetColSize(1, 80);
 	addrList->SetColSize(2, 9999);
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
@@ -206,7 +206,7 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
-			mbi.Protect == scanSettings.protection &&
+			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
 			unsigned char* buffer = new unsigned char[mbi.RegionSize];
@@ -254,7 +254,7 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
-			mbi.Protect == scanSettings.protection &&
+			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
 			unsigned char* buffer = new unsigned char[mbi.RegionSize];
@@ -301,7 +301,7 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
-			mbi.Protect == scanSettings.protection &&
+			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
 			newAddresses.push_back(baseAddress); // store the base address
@@ -531,13 +531,6 @@ template <typename T> void Main::UpdateList(bool isFloat)
 	{
 		if (i == -1 || !addrList->IsVisible(i, 0, false)) { break; }
 
-		/*
-		if (IsAddressStatic(addressPool[i])) 
-		{
-			addrList->SetCellTextColour(i, 0, wxColour(250, 200, 0));
-		}
-		*/
-
 		T value;
 		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], &value, sizeof(T), 0);
 
@@ -570,10 +563,35 @@ template <typename T> void Main::UpdateList(bool isFloat)
 
 		if (addrList->GetCellValue(i, 0) != "") { continue; }
 
-		std::stringstream addressToHex;
-		addressToHex << std::hex << addressPool[i];
+		AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
 
-		addrList->SetCellValue(i, 0, addressToHex.str());
+		std::stringstream addressToHex;
+
+		if (info.rva != 0) // it's an address that is part of a module
+		{
+			addressToHex << std::hex << info.rva;
+
+			addrList->SetCellValue(i, 0, info.moduleName + "+" + addressToHex.str() + " " + info.sectionName);
+
+			switch (info.secitonType) 
+			{
+			case info.SectionType::Code:
+				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				break;
+			case info.SectionType::InitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				break;
+			case info.SectionType::UninitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
+			}
+		}
+		else 
+		{
+			addressToHex << std::hex << addressPool[i];
+
+			addrList->SetCellValue(i, 0, addressToHex.str());
+		}
 	}
 }
 
@@ -607,10 +625,35 @@ void Main::UpdateListByteArray(int size)
 
 		if (addrList->GetCellValue(i, 0) != "") { continue; }
 
-		std::stringstream addressToHex;
-		addressToHex << std::hex << addressPool[i];
+		AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
 
-		addrList->SetCellValue(i, 0, addressToHex.str());
+		std::stringstream addressToHex;
+
+		if (info.rva != 0) // it's an address that is part of a module
+		{
+			addressToHex << std::hex << info.rva;
+
+			addrList->SetCellValue(i, 0, info.moduleName + "+" + addressToHex.str() + " " + info.sectionName);
+
+			switch (info.secitonType)
+			{
+			case info.SectionType::Code:
+				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				break;
+			case info.SectionType::InitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				break;
+			case info.SectionType::UninitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
+			}
+		}
+		else
+		{
+			addressToHex << std::hex << addressPool[i];
+
+			addrList->SetCellValue(i, 0, addressToHex.str());
+		}
 	}
 }
 
@@ -639,11 +682,64 @@ bool Main::ParseByteArray(wxString str, unsigned char** bytes)
 	return true;
 }
 
-/*
-bool Main::IsAddressStatic(unsigned long long address)
+Main::AddressModuleInfo Main::GetAddressModuleInfo(unsigned long long address)
 {
-	// find the module that the address is located in
-	HANDLE modSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetProcessId(procHandle)));
+	AddressModuleInfo info = {};
+	
+	for (int i = 0; i < moduleHandles.size(); i++)
+	{
+		if (address < moduleHandles[i]) { continue; }
+
+		unsigned long long relativeAddress = address - moduleHandles[i];
+
+		//https://reverseengineering.stackexchange.com/questions/6077/get-sections-names-and-headers-for-a-file-using-c
+
+		IMAGE_DOS_HEADER dosHeader = {};
+		ReadProcessMemory(procHandle, (unsigned long long*)moduleHandles[i], &dosHeader, sizeof(dosHeader), nullptr);
+
+		unsigned long long imageNtHeadersAddress = (moduleHandles[i] + (unsigned long long)dosHeader.e_lfanew);
+		
+		IMAGE_NT_HEADERS imageNtHeader = {};
+		ReadProcessMemory(procHandle, (unsigned long long*)imageNtHeadersAddress, &imageNtHeader, sizeof(imageNtHeader), nullptr);
+
+		for (int j = 0; j < imageNtHeader.FileHeader.NumberOfSections; j++)
+		{
+			IMAGE_SECTION_HEADER section = {};
+
+			unsigned long long sectionAddress = (sizeof(IMAGE_SECTION_HEADER) * j) + imageNtHeadersAddress + sizeof(imageNtHeader.Signature) + sizeof(imageNtHeader.FileHeader) + imageNtHeader.FileHeader.SizeOfOptionalHeader;
+			
+			ReadProcessMemory(procHandle, (unsigned long long*)sectionAddress, &section, sizeof(section), nullptr);
+			
+			DWORD sectionBase = section.VirtualAddress;
+			DWORD sectionEnd = sectionBase + section.Misc.VirtualSize;
+			
+			if (relativeAddress >= sectionBase && relativeAddress <= sectionEnd)
+			{
+				info.rva = relativeAddress;
+
+				if (section.Characteristics & IMAGE_SCN_CNT_CODE) { info.secitonType = info.SectionType::Code; }
+				else if (section.Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) { info.secitonType = info.SectionType::InitData; }
+				else if (section.Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) { info.secitonType = info.SectionType::UninitData; }
+
+				info.sectionName = wxString(section.Name);
+				info.moduleName = moduleNames[i];
+				
+				return info;
+			}
+		}
+	}
+
+	return info;
+}
+
+void Main::UpdateModuleHandles() 
+{
+	moduleHandles.clear();
+	moduleHandles.shrink_to_fit();
+	moduleNames.clear();
+	moduleNames.shrink_to_fit();
+	
+	HANDLE modSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetProcessId(procHandle));
 
 	if (modSnap != INVALID_HANDLE_VALUE)
 	{
@@ -654,36 +750,44 @@ bool Main::IsAddressStatic(unsigned long long address)
 		{
 			do
 			{
-				unsigned long long modBase = (unsigned long long)modEntry.modBaseAddr;
+				moduleHandles.push_back((unsigned long long)modEntry.hModule);
+				moduleNames.push_back(wxString(modEntry.szModule));
 
-				if (address > modBase && address < (modBase + modEntry.modBaseSize))
-				{
-					// get the location of the module's IMAGE_NT_HEADERS structure
-					IMAGE_NT_HEADERS* imageNTHeaders = ImageNtHeader(modEntry.hModule);
-
-					// the section table immediately follows the IMAGE_NT_HEADERS
-					IMAGE_SECTION_HEADER* sectionInfo = (IMAGE_SECTION_HEADER*)(imageNTHeaders + 1);
-
-					for (int i = 0; i < imageNTHeaders->FileHeader.NumberOfSections; i++) // loop through each section of the module
-					{
-						if (address > sectionInfo->VirtualAddress && address < (sectionInfo->VirtualAddress + sectionInfo->Misc.VirtualSize))
-						{
-							return sectionInfo->Characteristics == IMAGE_SCN_CNT_INITIALIZED_DATA;
-						}
-
-						sectionInfo++;
-					}
-
-					break;
-				}
 			} while (Module32Next(modSnap, &modEntry));
 		}
 	}
 	CloseHandle(modSnap);
-
-	return false;
 }
-*/
+
+void Main::FreezeProcess(bool freeze) 
+{
+	DWORD procId = GetProcessId(procHandle);
+	HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, procId);
+
+	if (snap != INVALID_HANDLE_VALUE) 
+	{
+		THREADENTRY32 threadEntry;
+		threadEntry.dwSize = sizeof(THREADENTRY32);
+
+		if (Thread32First(snap, &threadEntry)) 
+		{
+			do
+			{
+				if (threadEntry.th32OwnerProcessID == procId)
+				{
+					HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
+
+					if (freeze) { SuspendThread(threadHandle); }
+					else { ResumeThread(threadHandle); }
+
+					CloseHandle(threadHandle);
+				}
+			} while (Thread32Next(snap, &threadEntry));
+		}
+
+		CloseHandle(snap);
+	}
+}
 
 // gui functions
 
@@ -700,6 +804,7 @@ void Main::UpdateProcessSelection(DWORD procId)
 
 	savedMenu->procHandle = procHandle;
 	breakpointMenu->procHandle = procHandle;
+	scanSettingsMenu->procHandle = procHandle;
 
 	firstScan->Enable();
 	scanSettingsButton->Enable();
@@ -719,8 +824,14 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		ResetScan();
 		return;
 	}
-	
+
+	UpdateModuleHandles();
+
 	UpdateBaseAndRoundingAndThreads();
+
+	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
+
+	if (freezeDuringScan) { FreezeProcess(true); }
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	unsigned long long originalMax = memoryScanSettings.maxAddress;
@@ -738,7 +849,6 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	for (int i = 0; i < threads; i++) 
 	{
-		memoryScanSettings.minAddress = originalMax * (i / (float)threads);
 		memoryScanSettings.maxAddress = originalMax * ((i+1) / (float)threads);
 
 		switch (valueType)
@@ -934,6 +1044,8 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			break;
 		}
 		}
+
+		memoryScanSettings.minAddress = memoryScanSettings.maxAddress;
 	}
 
 	for (int i = 0; i < threads; i++) 
@@ -961,6 +1073,8 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	{ 
 		addrList->AppendRows(results);
 	}
+
+	if (freezeDuringScan) { FreezeProcess(false); }
 	
 	nextScan->Enable();
 	selectValueType->Disable();
@@ -990,6 +1104,10 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	UpdateBaseAndRoundingAndThreads();
 
 	bool noInput = selectScanType->GetSelection() > 7; // input will not be read if scan type is Increased, Decreased, Changed, or Unchanged
+
+	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
+
+	if (freezeDuringScan) { FreezeProcess(true); }
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	unsigned long long originalMax = addressPool.size();
@@ -1239,7 +1357,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 		addrList->AppendRows(results);
 	}
 
+	if (freezeDuringScan) { FreezeProcess(false); }
+
 	performedAllScan = false;
+
+	manualUpdate->Enable();  // re enable after all scan
+
+	if (manualUpdate->IsChecked()) { manualUpdateButton->Enable(); }
 }
 
 void Main::UpdateListOnTimer(wxTimerEvent& e) 
@@ -1283,9 +1407,8 @@ void Main::UpdateListOnTimer(wxTimerEvent& e)
 	}
 }
 
-void Main::WriteValueHandler(unsigned long long* address)
+void Main::WriteValueHandler(wxString input, unsigned long long* address)
 {
-	wxString input = wxGetTextFromUser("New Value (using current base):", "Write Value");
 	if (input == "") { return; }
 
 	//Get and check base
@@ -1401,26 +1524,56 @@ void Main::RightClickOptions(wxGridEvent& e)
 {
 	wxMenu menu;
 
-	int row = e.GetRow();
+	int row = e.GetRow(); // row right-clicked on
+	wxArrayInt selectedRows = addrList->GetSelectedRows(); // all rows also selected
 
 	wxMenuItem* save = new wxMenuItem(0, 100, "Save");
 	save->SetBackgroundColour(wxColour(60, 60, 60));
 	save->SetTextColour(wxColour(220, 220, 220));
 	menu.Append(save);
-	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { savedMenu->OpenMenu(GetPosition()); savedMenu->AddAddress(addressPool[row], selectValueType->GetSelection(), base, byteArraySize); }, 100);
+	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
+		{ 
+			if (!savedMenu->IsVisible()) { savedMenu->OpenMenu(GetPosition()); }
+
+			if (selectedRows.IsEmpty()) { savedMenu->AddAddress(addressPool[row], selectValueType->GetSelection(), base, byteArraySize); }
+
+			for (int i = 0; i < selectedRows.GetCount(); i++)
+			{
+				savedMenu->AddAddress(addressPool[selectedRows.Item(i)], selectValueType->GetSelection(), base, byteArraySize);
+			}
+
+		}, 100);
 
 	if (selectValueType->GetSelection() != 10) // cant write if its a byte array
 	{
 		wxMenuItem* write = menu.Append(101, "Write Value");
 		write->SetBackgroundColour(wxColour(60, 60, 60));
 		write->SetTextColour(wxColour(220, 220, 220));
-		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { WriteValueHandler((unsigned long long*)addressPool[row]); }, 101);
+		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
+			{ 
+				wxString input = wxGetTextFromUser("New Value (using current base):", "Write Value");
+				
+				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (unsigned long long*)addressPool[row]); }
+
+				for (int i = 0; i < selectedRows.GetCount(); i++)
+				{
+					WriteValueHandler(input, (unsigned long long*)addressPool[selectedRows.Item(i)]);
+				}
+			}, 101);
 	}
 	
 	wxMenuItem* remove = menu.Append(102, "Remove");
 	remove->SetBackgroundColour(wxColour(60, 60, 60));
 	remove->SetTextColour(wxColour(220, 220, 220));
-	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { RemoveRow(row); }, 102);
+	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
+		{ 
+			if (selectedRows.IsEmpty()) { RemoveRow(row); }
+
+			for (int i = 0; i < selectedRows.GetCount(); i++)
+			{
+				RemoveRow(selectedRows.Item(i)-i);
+			}
+		}, 102);
 
 	wxMenuItem* cpyAddr = menu.Append(103, "Copy Address");
 	cpyAddr->SetBackgroundColour(wxColour(60, 60, 60));
@@ -1592,12 +1745,6 @@ void Main::UpdateScanType(wxCommandEvent& e)
 		manualUpdate->Disable();
 		manualUpdateButton->Disable();
 		updateTimer->Stop();
-	}
-	else 
-	{
-		manualUpdate->Enable(); // re enable after all scan
-
-		if (manualUpdate->IsChecked()) { manualUpdateButton->Enable(); }
 	}
 	
 	if (selectScanType->GetSelection() > 7)

@@ -1,11 +1,12 @@
 #pragma once
 #include <wx/wx.h>
 #include <sstream>
+#include "TLHelp32.h"
 
 class ScanSettingsMenu : public wxFrame
 {
 public:
-	ScanSettingsMenu();
+	ScanSettingsMenu(HANDLE hProc);
 
 	wxStaticText* protectionLabel = nullptr;
 	wxCheckListBox* protectChoice = nullptr;
@@ -15,17 +16,23 @@ public:
 
 	wxCheckBox* alignMemory = nullptr;
 
+	wxCheckBox* freezeProcess = nullptr;
+
 	wxStaticText* minAddrTxt = nullptr;
 	wxTextCtrl* minAddrInput = nullptr;
 
 	wxStaticText* maxAddrTxt = nullptr;
 	wxTextCtrl* maxAddrInput = nullptr;
 
+	wxStaticText* moduleSelectTxt = nullptr;
+	wxChoice* moduleSelect = nullptr;
+
 	wxBoxSizer* column1Sizer = nullptr;
 	wxBoxSizer* column2Sizer = nullptr;
 	wxBoxSizer* column3Sizer = nullptr;
-	wxBoxSizer* column4Sizer = nullptr;
 	wxBoxSizer* hSizer = nullptr;
+
+	HANDLE procHandle;
 
 	enum ids
 	{
@@ -33,25 +40,28 @@ public:
 		ProtectionsListID,
 		MemoryTypeListID,
 		MinAddressInputID,
-		MaxAddressInputID
+		MaxAddressInputID,
+		SelectModuleID
 	};
 
-	int protections[5] =
+	int protections[6] =
 	{
 		PAGE_EXECUTE_READ,
 		PAGE_EXECUTE_READWRITE,
 		PAGE_EXECUTE_WRITECOPY,
 		PAGE_READONLY,
-		PAGE_READWRITE
+		PAGE_READWRITE,
+		-1 // all
 	};
 
-	const char* protectStrs[5] =
+	const char* protectStrs[6] =
 	{
 		"PAGE_EXECUTE_READ",
 		"PAGE_EXECUTE_READWRITE",
 		"PAGE_EXECUTE_WRITECOPY",
 		"PAGE_READONLY",
-		"PAGE_READWRITE"
+		"PAGE_READWRITE",
+		"ALL"
 	};
 
 	const char* typeStrs[3] =
@@ -61,7 +71,7 @@ public:
 		"MEM_PRIVATE"
 	};
 
-	int currentProtection = PAGE_READWRITE;
+	int currentProtection = -1;
 
 	bool image = true;
 	bool mapped = false;
@@ -69,6 +79,12 @@ public:
 
 	unsigned long long minAddress = 0;
 	unsigned long long maxAddress = 0x7fffffffffff;
+
+	struct ModuleBounds 
+	{
+		unsigned long long start, end;
+	};
+	std::vector<ModuleBounds> moduleAddresses;
 
 	void UpdateProtection(wxCommandEvent& e);
 	void DeselectProtection(wxCommandEvent& e);
@@ -81,6 +97,8 @@ public:
 
 	void UpdateMinOnTextEnter(wxCommandEvent& e);
 	void UpdateMaxOnTextEnter(wxCommandEvent& e);
+	void UpdateSelectedModule(wxCommandEvent& e);
+	void UpdateModuleAddresses();
 
 	void OpenMenu(wxPoint position);
 

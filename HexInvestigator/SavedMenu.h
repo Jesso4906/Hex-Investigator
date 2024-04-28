@@ -36,7 +36,7 @@ public:
 	template <typename T> void UpdateRow(int row, bool isFloat);
 	void UpdateRowByteArray(int row, int size);
 
-	void WriteValueHandler(unsigned long long* address, char type, char base);
+	void WriteValueHandler(wxString input, unsigned long long* address, char type, char base);
 
 	void RemoveRow(int row);
 

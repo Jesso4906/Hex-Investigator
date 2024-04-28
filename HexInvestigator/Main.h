@@ -2,8 +2,6 @@
 #include "Utils.h"
 #include <wx/grid.h>
 #include "TLHelp32.h"
-//#include "dbghelp.h"
-//#pragma comment( lib, "dbghelp.lib" )
 #include <iomanip>
 #include <numeric>
 #include <sstream>
@@ -11,6 +9,9 @@
 #include "ScanSettingsMenu.h"
 #include "SavedMenu.h"
 #include "BreakpointMenu.h"
+
+#include "imagehlp.h"
+#pragma comment( lib, "imagehlp.lib" )
 
 class SelectProcessMenu; // forward delcared becasue it needs to access the Main class
 
@@ -61,6 +62,8 @@ public:
 
 	wxTimer* updateTimer = nullptr;
 
+	HANDLE procHandle = 0;
+
 	enum ids
 	{
 		MainWindowID,
@@ -88,7 +91,19 @@ public:
 		bool roundFloats, scanImageMem, scanMappedMem, scanPrivateMem, alignMemory;
 	};
 
-	HANDLE procHandle = 0;
+	struct AddressModuleInfo 
+	{
+		unsigned long long rva;
+
+		enum SectionType { Code, InitData, UninitData } secitonType;
+
+		wxString sectionName;
+
+		wxString moduleName;
+	};
+
+	std::vector<unsigned long long> moduleHandles;
+	std::vector<wxString> moduleNames;
 
 	std::vector<unsigned long long> addressPool;
 	std::vector<unsigned char> bytes; // used to detect change in values
@@ -141,7 +156,11 @@ public:
 	template <typename T> void UpdateList(bool isFloat);
 	void UpdateListByteArray(int size);
 
-	//bool IsAddressStatic(unsigned long long address);
+	AddressModuleInfo GetAddressModuleInfo(unsigned long long address);
+
+	void UpdateModuleHandles();
+
+	void FreezeProcess(bool freeze);
 
 	// gui functions
 
@@ -155,7 +174,7 @@ public:
 
 	void UpdateListOnTimer(wxTimerEvent& e);
 
-	void WriteValueHandler(unsigned long long* address);
+	void WriteValueHandler(wxString input, unsigned long long* address);
 
 	void RightClickOptions(wxGridEvent& e);
 

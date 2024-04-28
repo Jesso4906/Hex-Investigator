@@ -25,6 +25,7 @@ SavedMenu::SavedMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "Saved Addre
 
 	addrList->CreateGrid(0, 4);
 	addrList->EnableGridLines(false);
+	addrList->SetSelectionMode(wxGrid::wxGridSelectionModes::wxGridSelectRows);
 	addrList->SetScrollRate(0, 10);
 	addrList->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	addrList->DisableDragRowSize();
@@ -151,9 +152,8 @@ void SavedMenu::UpdateRowByteArray(int row, int size)
 	addrList->SetCellValue(row, 3, valueStr);
 }
 
-void SavedMenu::WriteValueHandler(unsigned long long* address, char type, char base)
+void SavedMenu::WriteValueHandler(wxString input, unsigned long long* address, char type, char base)
 {
-	wxString input = wxGetTextFromUser("New Value:", "Write Value");
 	if (input == "") { return; }
 
 	switch (type)
@@ -272,7 +272,8 @@ void SavedMenu::RightClickOptions(wxGridEvent& e)
 {
 	wxMenu menu;
 
-	int row = e.GetRow();
+	int row = e.GetRow(); // row right clicked on
+	wxArrayInt selectedRows = addrList->GetSelectedRows(); // all rows also selected
 
 	if (types[row] != 10) // cant write if its a byte array
 	{
@@ -280,13 +281,32 @@ void SavedMenu::RightClickOptions(wxGridEvent& e)
 		write->SetBackgroundColour(wxColour(60, 60, 60));
 		write->SetTextColour(wxColour(220, 220, 220));
 		menu.Append(write);
-		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { WriteValueHandler((unsigned long long*)addresses[row], types[row], bases[row]); }, 200);
+		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
+			{ 
+				wxString input = wxGetTextFromUser("New Value:", "Write Value");
+
+				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (unsigned long long*)addresses[row], types[row], bases[row]); }
+
+				for (int i = 0; i < selectedRows.GetCount(); i++) 
+				{
+					int currentRow = selectedRows.Item(i);
+					WriteValueHandler(input, (unsigned long long*)addresses[currentRow], types[currentRow], bases[currentRow]);
+				}
+			}, 200);
 	}
 
 	wxMenuItem* remove = menu.Append(201, "Remove");
 	remove->SetBackgroundColour(wxColour(60, 60, 60));
 	remove->SetTextColour(wxColour(220, 220, 220));
-	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { RemoveRow(row); }, 201);
+	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
+		{ 
+			if (selectedRows.IsEmpty()) { RemoveRow(row); }
+
+			for (int i = 0; i < selectedRows.GetCount(); i++)
+			{
+				RemoveRow(selectedRows.Item(i)-i);
+			}
+		}, 201);
 
 	wxMenuItem* cpyAddr = menu.Append(202, "Copy Address");
 	cpyAddr->SetBackgroundColour(wxColour(60, 60, 60));

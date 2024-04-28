@@ -102,6 +102,8 @@ public:
 
 	void AddAddressToList(unsigned long long address);
 
+	void ClearList();
+
 	void RightClickOptions(wxGridEvent& e);
 
 	void OpenMenu(wxPoint position);

@@ -107,7 +107,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 
 //https://www.codeproject.com/Articles/28071/Toggle-hardware-data-read-execute-breakpoints-prog
 
-bool BreakpointMenu::SetHardwareBreakpoint(unsigned long long address, BPSize size, BPType type)
+bool BreakpointMenu::SetHardwareBreakpoint(uintptr_t address, BPSize size, BPType type)
 {
 	int procId = GetProcessId(procHandle);
 
@@ -340,7 +340,7 @@ void BreakpointMenu::RemoveHBP(wxCommandEvent& e)
 
 void BreakpointMenu::SetWriteBP(wxCommandEvent& e)
 {
-	unsigned long long address;
+	uintptr_t address;
 	if (!addressInput->GetValue().ToULongLong(&address, 16)) 
 	{
 		wxMessageBox("Invalid Address", "Can't Set Breakpoint"); 
@@ -369,7 +369,7 @@ void BreakpointMenu::SetWriteBP(wxCommandEvent& e)
 
 void BreakpointMenu::SetReadWriteBP(wxCommandEvent& e)
 {
-	unsigned long long address;
+	uintptr_t address;
 	if (!addressInput->GetValue().ToULongLong(&address, 16))
 	{
 		wxMessageBox("Invalid Address", "Can't Set Breakpoint");
@@ -398,7 +398,7 @@ void BreakpointMenu::SetReadWriteBP(wxCommandEvent& e)
 
 void BreakpointMenu::SetExecuteBP(wxCommandEvent& e)
 {
-	unsigned long long address;
+	uintptr_t address;
 	if (!addressInput->GetValue().ToULongLong(&address, 16))
 	{
 		wxMessageBox("Invalid Address", "Can't Set Breakpoint");
@@ -425,7 +425,7 @@ void BreakpointMenu::SetExecuteBP(wxCommandEvent& e)
 	ClearList();
 }
 
-void BreakpointMenu::AddAddressToList(unsigned long long address)
+void BreakpointMenu::AddAddressToList(uintptr_t address)
 {
 	// if it's already in the list then increment the hits
 	for (int i = 0; i < entries.size(); i++) 
@@ -518,7 +518,7 @@ wxThread::ExitCode DebugThread::Entry()
 		DWORD exceptionCode = debugEvent.u.Exception.ExceptionRecord.ExceptionCode;
 		if (debugEvent.dwDebugEventCode == EXCEPTION_DEBUG_EVENT && (exceptionCode == STATUS_WX86_SINGLE_STEP || exceptionCode == EXCEPTION_SINGLE_STEP))
 		{
-			breakpointMenu->AddAddressToList((unsigned long long)debugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
+			breakpointMenu->AddAddressToList((uintptr_t)debugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
 		}
 
 		ContinueDebugEvent(debugEvent.dwProcessId, debugEvent.dwThreadId, DBG_CONTINUE);

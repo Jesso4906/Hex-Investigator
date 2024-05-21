@@ -72,12 +72,12 @@ public:
 
 	struct ListEntry 
 	{
-		unsigned long long address = 0;
+		uintptr_t address = 0;
 		unsigned int hits = 0;
 	};
 	std::vector<ListEntry> entries;
 
-	unsigned long long currentAddress;
+	uintptr_t currentAddress;
 	BPSize currentSize;
 	BPType currentType;
 
@@ -86,7 +86,7 @@ public:
 
 	DebugThread* debugThread = nullptr;
 
-	bool SetHardwareBreakpoint(unsigned long long address, BPSize size, BPType type);
+	bool SetHardwareBreakpoint(uintptr_t address, BPSize size, BPType type);
 	bool DisableDebugRegisters();
 
 	void AttachDebugger(wxCommandEvent& e);
@@ -98,7 +98,7 @@ public:
 	void SetReadWriteBP(wxCommandEvent& e);
 	void SetExecuteBP(wxCommandEvent& e);
 
-	void AddAddressToList(unsigned long long address);
+	void AddAddressToList(uintptr_t address);
 
 	void UpdateList(wxTimerEvent& e);
 

@@ -17,7 +17,7 @@ public:
 
 	const int updateRate = 150;
 
-	void WriteValue(HANDLE procHandle, unsigned long long* address, void* newValue, int size);
+	void WriteValue(HANDLE procHandle, uintptr_t* address, void* newValue, int size);
 
 	void CopyToClipboard(const char* txt);
 

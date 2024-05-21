@@ -171,12 +171,12 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 // memory scan functions
 
-template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr)
+template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
 	
-	unsigned long long baseAddress = scanSettings.minAddress;
+	uintptr_t baseAddress = scanSettings.minAddress;
 
 	int size = sizeof(T);
 
@@ -207,7 +207,7 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	unsigned int results = 0;
 
 	_MEMORY_BASIC_INFORMATION mbi;
-	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
+	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
@@ -246,16 +246,16 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	return results;
 }
 
-unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<unsigned long long>* addressesPtr)
+unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<uintptr_t>* addressesPtr)
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 	
-	unsigned long long baseAddress = scanSettings.minAddress;
+	uintptr_t baseAddress = scanSettings.minAddress;
 
 	unsigned int results = 0;
 
 	_MEMORY_BASIC_INFORMATION mbi;
-	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
+	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
@@ -289,12 +289,12 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 	return results;
 }
 
-template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSettings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr)
+template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSettings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
 	
-	unsigned long long baseAddress = scanSettings.minAddress;
+	uintptr_t baseAddress = scanSettings.minAddress;
 
 	int offset = 1;
 	if (scanSettings.alignMemory) { offset = sizeof(T); }
@@ -302,7 +302,7 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	unsigned int results = 0;
 
 	_MEMORY_BASIC_INFORMATION mbi;
-	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (unsigned long long*)baseAddress, &mbi, sizeof(mbi)))
+	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
@@ -329,9 +329,9 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	return results;
 }
 
-template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr)
+template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
 
 	int size = sizeof(T);
@@ -366,7 +366,7 @@ template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSetting
 	for (int i = scanSettings.minAddress; i < scanSettings.maxAddress; i++)
 	{
 		T value;
-		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], &value, size, 0);
+		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], &value, size, 0);
 
 		if (scanSettings.roundFloats) { value = std::round(value * scanSettings.roundingValue) / scanSettings.roundingValue; }
 
@@ -397,16 +397,16 @@ template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSetting
 	return results;
 }
 
-unsigned int Main::NextScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<unsigned long long>* addressesPtr)
+unsigned int Main::NextScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<uintptr_t>* addressesPtr)
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 
 	unsigned int results = 0;
 
 	for (int i = scanSettings.minAddress; i < scanSettings.maxAddress; i++)
 	{
 		unsigned char* value = new unsigned char[size];
-		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], value, size, 0);
+		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], value, size, 0);
 
 		for (int j = 0; j < size; j++)
 		{
@@ -426,9 +426,9 @@ unsigned int Main::NextScanByteArray(MemoryScanSettings scanSettings, unsigned c
 	return results;
 }
 
-template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) // this function is called after FirstScanAll because of the different way the addresses are stored
+template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) // this function is called after FirstScanAll because of the different way the addresses are stored
 {
-	std::vector<unsigned long long> newAddresses;
+	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
 
 	int size = sizeof(T);
@@ -467,12 +467,12 @@ template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSett
 
 	for (int i = scanSettings.minAddress; i < scanSettings.maxAddress; i += 2) // after FirstScanAll, region bases and the size are stored in pairs
 	{
-		unsigned long long address = addressPool[i];
+		uintptr_t address = addressPool[i];
 		int regionSize = addressPool[i + 1];
 		for (int j = 0; j < regionSize; j += offset)
 		{
 			T value;
-			ReadProcessMemory(procHandle, (unsigned long long*)(address + j), &value, size, 0);
+			ReadProcessMemory(procHandle, (uintptr_t*)(address + j), &value, size, 0);
 
 			if (scanSettings.roundFloats) { value = std::round(value * scanSettings.roundingValue) / scanSettings.roundingValue; }
 
@@ -536,7 +536,7 @@ template <typename T> void Main::UpdateList(bool isFloat)
 		if (i == -1 || !addrList->IsVisible(i, 0, false)) { break; }
 
 		T value;
-		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], &value, sizeof(T), 0);
+		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], &value, sizeof(T), 0);
 
 		// convert the value to the appropriate string
 		std::string valueStr;
@@ -566,38 +566,32 @@ template <typename T> void Main::UpdateList(bool isFloat)
 			addrList->SetCellValue(i, 1, offsetToHex.str());
 		}
 
-		bool displayModuleInfo = scanSettingsMenu->displayModuleInfo->IsChecked();
+		AddressModuleInfo info = {};
+		if (scanSettingsMenu->displayModuleInfo->IsChecked()) { info = GetAddressModuleInfo(addressPool[i]); }
 
 		std::stringstream addressToHex;
 
-		if(displayModuleInfo)
+		char firstChar = addrList->GetCellValue(i, 0).GetChar(0);
+		if (info.rva != 0 && firstChar != '<')
 		{
-			if(addrList->GetCellValue(i, 0).GetChar(0) != '<')
+			addressToHex << std::hex << info.rva;
+
+			addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
+
+			switch (info.secitonType)
 			{
-				AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
-				
-				if (info.rva != 0) // it's an address that is part of a module
-				{
-					addressToHex << std::hex << info.rva;
-
-					addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
-
-					switch (info.secitonType)
-					{
-					case info.SectionType::Code:
-						addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
-						break;
-					case info.SectionType::InitData:
-						addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
-						break;
-					case info.SectionType::UninitData:
-						addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
-						break;
-					}
-				}
+			case info.SectionType::Code:
+				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				break;
+			case info.SectionType::InitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				break;
+			case info.SectionType::UninitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
 			}
 		}
-		else if(addrList->GetCellValue(i, 0).GetChar(0) == '<')
+		else if (info.rva == 0 && (addrList->GetCellValue(i, 0) == "" || firstChar == '<'))
 		{
 			addressToHex << std::hex << addressPool[i];
 
@@ -614,7 +608,7 @@ void Main::UpdateListByteArray(int size)
 		if (i == -1 || !addrList->IsVisible(i, 0, false)) { break; }
 
 		unsigned char* value = new unsigned char[size];
-		ReadProcessMemory(procHandle, (unsigned long long*)addressPool[i], value, size, 0);
+		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], value, size, 0);
 
 		std::string valueStr;
 		for (int i = 0; i < size; i++)
@@ -635,38 +629,32 @@ void Main::UpdateListByteArray(int size)
 			addrList->SetCellValue(i, 1, offsetToHex.str());
 		}
 
-		bool displayModuleInfo = scanSettingsMenu->displayModuleInfo->IsChecked();
+		AddressModuleInfo info = {};
+		if (scanSettingsMenu->displayModuleInfo->IsChecked()) { info = GetAddressModuleInfo(addressPool[i]); }
 
 		std::stringstream addressToHex;
 
-		if (displayModuleInfo)
+		char firstChar = addrList->GetCellValue(i, 0).GetChar(0);
+		if (info.rva != 0 && firstChar != '<')
 		{
-			if (addrList->GetCellValue(i, 0).GetChar(0) != '<')
+			addressToHex << std::hex << info.rva;
+
+			addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
+
+			switch (info.secitonType)
 			{
-				AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
-
-				if (info.rva != 0) // it's an address that is part of a module
-				{
-					addressToHex << std::hex << info.rva;
-
-					addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
-
-					switch (info.secitonType)
-					{
-					case info.SectionType::Code:
-						addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
-						break;
-					case info.SectionType::InitData:
-						addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
-						break;
-					case info.SectionType::UninitData:
-						addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
-						break;
-					}
-				}
+			case info.SectionType::Code:
+				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				break;
+			case info.SectionType::InitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				break;
+			case info.SectionType::UninitData:
+				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
 			}
 		}
-		else if (addrList->GetCellValue(i, 0).GetChar(0) == '<')
+		else if (info.rva == 0 && (addrList->GetCellValue(i, 0) == "" || firstChar == '<'))
 		{
 			addressToHex << std::hex << addressPool[i];
 
@@ -701,7 +689,7 @@ bool Main::ParseByteArray(wxString str, unsigned char** bytes)
 	return true;
 }
 
-Main::AddressModuleInfo Main::GetAddressModuleInfo(unsigned long long address)
+Main::AddressModuleInfo Main::GetAddressModuleInfo(uintptr_t address)
 {
 	AddressModuleInfo info = {};
 	
@@ -709,25 +697,25 @@ Main::AddressModuleInfo Main::GetAddressModuleInfo(unsigned long long address)
 	{
 		if (address < moduleHandles[i]) { continue; }
 
-		unsigned long long relativeAddress = address - moduleHandles[i];
+		uintptr_t relativeAddress = address - moduleHandles[i];
 
 		//https://reverseengineering.stackexchange.com/questions/6077/get-sections-names-and-headers-for-a-file-using-c
 
 		IMAGE_DOS_HEADER dosHeader = {};
-		ReadProcessMemory(procHandle, (unsigned long long*)moduleHandles[i], &dosHeader, sizeof(dosHeader), nullptr);
+		ReadProcessMemory(procHandle, (uintptr_t*)moduleHandles[i], &dosHeader, sizeof(dosHeader), nullptr);
 
-		unsigned long long imageNtHeadersAddress = (moduleHandles[i] + (unsigned long long)dosHeader.e_lfanew);
+		uintptr_t imageNtHeadersAddress = (moduleHandles[i] + (uintptr_t)dosHeader.e_lfanew);
 		
 		IMAGE_NT_HEADERS imageNtHeader = {};
-		ReadProcessMemory(procHandle, (unsigned long long*)imageNtHeadersAddress, &imageNtHeader, sizeof(imageNtHeader), nullptr);
+		ReadProcessMemory(procHandle, (uintptr_t*)imageNtHeadersAddress, &imageNtHeader, sizeof(imageNtHeader), nullptr);
 
 		for (int j = 0; j < imageNtHeader.FileHeader.NumberOfSections; j++)
 		{
 			IMAGE_SECTION_HEADER section = {};
 
-			unsigned long long sectionAddress = (sizeof(IMAGE_SECTION_HEADER) * j) + imageNtHeadersAddress + sizeof(imageNtHeader.Signature) + sizeof(imageNtHeader.FileHeader) + imageNtHeader.FileHeader.SizeOfOptionalHeader;
+			uintptr_t sectionAddress = (sizeof(IMAGE_SECTION_HEADER) * j) + imageNtHeadersAddress + sizeof(imageNtHeader.Signature) + sizeof(imageNtHeader.FileHeader) + imageNtHeader.FileHeader.SizeOfOptionalHeader;
 			
-			ReadProcessMemory(procHandle, (unsigned long long*)sectionAddress, &section, sizeof(section), nullptr);
+			ReadProcessMemory(procHandle, (uintptr_t*)sectionAddress, &section, sizeof(section), nullptr);
 			
 			DWORD sectionBase = section.VirtualAddress;
 			DWORD sectionEnd = sectionBase + section.Misc.VirtualSize;
@@ -769,7 +757,7 @@ void Main::UpdateModuleHandles()
 		{
 			do
 			{
-				moduleHandles.push_back((unsigned long long)modEntry.hModule);
+				moduleHandles.push_back((uintptr_t)modEntry.hModule);
 				moduleNames.push_back(wxString(modEntry.szModule));
 
 			} while (Module32Next(modSnap, &modEntry));
@@ -862,7 +850,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	UpdateBaseAndRoundingAndThreads();
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
-	unsigned long long originalMax = memoryScanSettings.maxAddress;
+	uintptr_t originalMax = memoryScanSettings.maxAddress;
 	
 	performedAllScan = selectScanType->GetSelection() == 6;
 
@@ -872,7 +860,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	std::vector<std::thread> scanThreads(threads);
 
-	std::vector<std::vector<unsigned long long>> addressLists(threads);
+	std::vector<std::vector<uintptr_t>> addressLists(threads);
 	std::vector<std::vector<unsigned char>> byteLists(threads);
 
 	for (int i = 0; i < threads; i++) 
@@ -885,7 +873,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<long long>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -894,7 +882,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			long long targetValue = 0;
 			if (!valueInput->GetValue().ToLongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<long long>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -903,7 +891,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<int>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -912,7 +900,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<int>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -921,7 +909,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<short>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -930,7 +918,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<short>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, (short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -939,7 +927,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<char>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -948,7 +936,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<char>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, (char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -957,7 +945,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<unsigned long long>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -966,7 +954,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned long long targetValue = 0;
 			if (!valueInput->GetValue().ToULongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -975,7 +963,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<unsigned int>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -984,7 +972,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -993,7 +981,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<unsigned short>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -1002,7 +990,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, (unsigned short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -1011,7 +999,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<unsigned char>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -1020,7 +1008,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, (unsigned char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -1029,7 +1017,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<float>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -1038,7 +1026,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, float targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, float targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<float>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, (float)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -1047,7 +1035,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->FirstScanAll<double>(settings, addressesPtr, bytesPtr); },
 					this, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 				break;
@@ -1056,7 +1044,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, double targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, double targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->FirstScan<double>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
@@ -1066,7 +1054,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned char* targetValue;
 			if (!ParseByteArray(valueInput->GetValue(), &targetValue)) { wxMessageBox("Invalid Value. Should be in format FB23EA...", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->FirstScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
@@ -1147,13 +1135,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	bool noInput = selectScanType->GetSelection() > 7; // input will not be read if scan type is Increased, Decreased, Changed, or Unchanged
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
-	unsigned long long originalMax = addressPool.size();
+	uintptr_t originalMax = addressPool.size();
 
 	unsigned int results = 0;
 
 	std::vector<std::thread> scanThreads(threads);
 
-	std::vector<std::vector<unsigned long long>> addressLists(threads);
+	std::vector<std::vector<uintptr_t>> addressLists(threads);
 	std::vector<std::vector<unsigned char>> byteLists(threads);
 
 	int valueType = selectValueType->GetSelection();
@@ -1174,13 +1162,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan) 
 			{ 
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<long long>(settings, targetValue, addressesPtr, bytesPtr); }, 
 					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<long long>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1192,13 +1180,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<int>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<int>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1210,13 +1198,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<short>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, (short)targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<short>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, (short)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1228,13 +1216,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<char>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, (char)targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<char>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, (char)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1246,13 +1234,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1264,13 +1252,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1282,13 +1270,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, (unsigned short)targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, (unsigned short)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1300,13 +1288,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, (unsigned char)targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, (unsigned char)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1318,13 +1306,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<float>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, (float)targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<float>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, (float)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1336,13 +1324,13 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 					{ *results += main->NextScanAll<double>(settings, targetValue, addressesPtr, bytesPtr); },
 					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
 				{ *results += main->NextScan<double>(settings, targetValue, addressesPtr, bytesPtr); },
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
@@ -1352,7 +1340,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			unsigned char* targetValue;
 			if (!ParseByteArray(valueInput->GetValue(), &targetValue)) { wxMessageBox("Invalid Value. Should be in format FB23EA...", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<unsigned long long>* addressesPtr) -> void
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->NextScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
@@ -1457,7 +1445,7 @@ void Main::UpdateListOnTimer(wxTimerEvent& e)
 	}
 }
 
-void Main::WriteValueHandler(wxString input, unsigned long long* address)
+void Main::WriteValueHandler(wxString input, uintptr_t* address)
 {
 	if (input == "") { return; }
 
@@ -1605,11 +1593,11 @@ void Main::RightClickOptions(wxGridEvent& e)
 			{ 
 				wxString input = wxGetTextFromUser("New Value (using current base):", "Write Value");
 				
-				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (unsigned long long*)addressPool[row]); }
+				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (uintptr_t*)addressPool[row]); }
 
 				for (int i = 0; i < selectedRows.GetCount(); i++)
 				{
-					WriteValueHandler(input, (unsigned long long*)addressPool[selectedRows.Item(i)]);
+					WriteValueHandler(input, (uintptr_t*)addressPool[selectedRows.Item(i)]);
 				}
 			}, 101);
 	}

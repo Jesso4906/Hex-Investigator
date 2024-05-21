@@ -86,7 +86,7 @@ public:
 
 	struct MemoryScanSettings
 	{
-		unsigned long long minAddress, maxAddress;
+		uintptr_t minAddress, maxAddress;
 
 		int protection, scanType, roundingValue;
 
@@ -95,7 +95,7 @@ public:
 
 	struct AddressModuleInfo 
 	{
-		unsigned long long rva;
+		uintptr_t rva;
 
 		enum SectionType { Code, InitData, UninitData } secitonType;
 
@@ -104,10 +104,10 @@ public:
 		wxString moduleName;
 	};
 
-	std::vector<unsigned long long> moduleHandles;
+	std::vector<uintptr_t> moduleHandles;
 	std::vector<wxString> moduleNames;
 
-	std::vector<unsigned long long> addressPool;
+	std::vector<uintptr_t> addressPool;
 	std::vector<unsigned char> bytes; // used to detect change in values
 
 	const char* firstScans[7] =
@@ -143,13 +143,13 @@ public:
 
 	bool performedAllScan = false;
 
-	template <typename T> unsigned int FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
-	unsigned int FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<unsigned long long>* addressesPtr);
-	template <typename T> unsigned int FirstScanAll(MemoryScanSettings scanSettings, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
+	template <typename T> unsigned int FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr);
+	unsigned int FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<uintptr_t>* addressesPtr);
+	template <typename T> unsigned int FirstScanAll(MemoryScanSettings scanSettings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr);
 
-	template <typename T> unsigned int NextScan(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
-	unsigned int NextScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<unsigned long long>* addressesPtr);
-	template <typename T> unsigned int NextScanAll(MemoryScanSettings scanSettings, T targetValue, std::vector<unsigned long long>* addressesPtr, std::vector<unsigned char>* bytesPtr);
+	template <typename T> unsigned int NextScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr);
+	unsigned int NextScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<uintptr_t>* addressesPtr);
+	template <typename T> unsigned int NextScanAll(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr);
 
 	MemoryScanSettings CreateScanSettingsStruct();
 
@@ -158,7 +158,7 @@ public:
 	template <typename T> void UpdateList(bool isFloat);
 	void UpdateListByteArray(int size);
 
-	AddressModuleInfo GetAddressModuleInfo(unsigned long long address);
+	AddressModuleInfo GetAddressModuleInfo(uintptr_t address);
 
 	void UpdateModuleHandles();
 
@@ -178,7 +178,7 @@ public:
 
 	void CheckKeyInput(wxTimerEvent& e);
 
-	void WriteValueHandler(wxString input, unsigned long long* address);
+	void WriteValueHandler(wxString input, uintptr_t* address);
 
 	void RightClickOptions(wxGridEvent& e);
 

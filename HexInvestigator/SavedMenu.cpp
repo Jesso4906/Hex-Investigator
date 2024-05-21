@@ -52,7 +52,7 @@ SavedMenu::SavedMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "Saved Addre
 	updateTimer = new wxTimer(this, UpdateTimerID);
 }
 
-void SavedMenu::AddAddress(unsigned long long address, char type, char base, int size=0)
+void SavedMenu::AddAddress(uintptr_t address, char type, char base, int size=0)
 {
 	int row = addrList->GetNumberRows();
 	addrList->AppendRows();
@@ -118,7 +118,7 @@ void SavedMenu::UpdateListOnTimer(wxTimerEvent& e)
 template <typename T> void SavedMenu::UpdateRow(int row, bool isFloat)
 {
 	T value;
-	ReadProcessMemory(procHandle, (unsigned long long*)addresses[row], &value, sizeof(T), 0);
+	ReadProcessMemory(procHandle, (uintptr_t*)addresses[row], &value, sizeof(T), 0);
 
 	std::string valueStr;
 	if (isFloat)
@@ -138,7 +138,7 @@ template <typename T> void SavedMenu::UpdateRow(int row, bool isFloat)
 void SavedMenu::UpdateRowByteArray(int row, int size)
 {
 	unsigned char* value = new unsigned char[size];
-	ReadProcessMemory(procHandle, (unsigned long long*)addresses[row], value, size, 0);
+	ReadProcessMemory(procHandle, (uintptr_t*)addresses[row], value, size, 0);
 
 	std::string valueStr;
 	for (int i = 0; i < size; i++)
@@ -153,7 +153,7 @@ void SavedMenu::UpdateRowByteArray(int row, int size)
 	addrList->SetCellValue(row, 3, valueStr);
 }
 
-void SavedMenu::WriteValueHandler(wxString input, unsigned long long* address, char type, char base)
+void SavedMenu::WriteValueHandler(wxString input, uintptr_t* address, char type, char base)
 {
 	if (input == "") { return; }
 
@@ -247,7 +247,7 @@ void SavedMenu::AddAddressButtonPress(wxCommandEvent& e)
 	wxString addressInput = wxGetTextFromUser("Enter Address", "Add Address", "0");
 	if (addressInput == "") { return; }
 
-	unsigned long long address;
+	uintptr_t address;
 	addressInput.ToULongLong(&address, 16);
 
 	char type = wxGetSingleChoiceIndex("Type", "Enter Type", wxArrayString(11, typeStrs));
@@ -288,12 +288,12 @@ void SavedMenu::RightClickOptions(wxGridEvent& e)
 			{ 
 				wxString input = wxGetTextFromUser("New Value:", "Write Value");
 
-				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (unsigned long long*)addresses[row], types[row], bases[row]); }
+				if (selectedRows.IsEmpty()) { WriteValueHandler(input, (uintptr_t*)addresses[row], types[row], bases[row]); }
 
 				for (int i = 0; i < selectedRows.GetCount(); i++) 
 				{
 					int currentRow = selectedRows.Item(i);
-					WriteValueHandler(input, (unsigned long long*)addresses[currentRow], types[currentRow], bases[currentRow]);
+					WriteValueHandler(input, (uintptr_t*)addresses[currentRow], types[currentRow], bases[currentRow]);
 				}
 			}, 200);
 	}

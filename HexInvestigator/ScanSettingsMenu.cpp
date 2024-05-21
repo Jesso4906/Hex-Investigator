@@ -148,8 +148,8 @@ void ScanSettingsMenu::UpdateMaxOnTextEnter(wxCommandEvent& e) { UpdateMax(); }
 
 void ScanSettingsMenu::UpdateSelectedModule(wxCommandEvent& e)
 {
-	unsigned long long min;
-	unsigned long long max;
+	uintptr_t min;
+	uintptr_t max;
 
 	int selection = e.GetSelection();
 
@@ -200,8 +200,8 @@ void ScanSettingsMenu::UpdateModuleAddresses()
 				moduleSelect->Append(wxString(modEntry.szModule));
 
 				ModuleBounds moduleBounds = {};
-				moduleBounds.start = (unsigned long long)modEntry.modBaseAddr;
-				moduleBounds.end = moduleBounds.start + (unsigned long long)modEntry.modBaseSize;
+				moduleBounds.start = (uintptr_t)modEntry.modBaseAddr;
+				moduleBounds.end = moduleBounds.start + (uintptr_t)modEntry.modBaseSize;
 
 				moduleAddresses.push_back(moduleBounds);
 
@@ -220,7 +220,7 @@ void ScanSettingsMenu::UpdateSelectedKeybind(wxCommandEvent& e)
 
 bool ScanSettingsMenu::UpdateMin()
 {
-	unsigned long long address;
+	uintptr_t address;
 	minAddrInput->GetValue().ToULongLong(&address, 16);
 
 	std::stringstream toHex;
@@ -241,7 +241,7 @@ bool ScanSettingsMenu::UpdateMin()
 }
 bool ScanSettingsMenu::UpdateMax()
 {
-	unsigned long long address;
+	uintptr_t address;
 	maxAddrInput->GetValue().ToULongLong(&address, 16);
 
 	std::stringstream toHex;

@@ -83,12 +83,12 @@ public:
 	bool mapped = false;
 	bool priv = true;
 
-	unsigned long long minAddress = 0;
-	unsigned long long maxAddress = 0x7fffffffffff;
+	uintptr_t minAddress = 0;
+	uintptr_t maxAddress = 0x7fffffffffff;
 
 	struct ModuleBounds 
 	{
-		unsigned long long start, end;
+		uintptr_t start, end;
 	};
 	std::vector<ModuleBounds> moduleAddresses;
 

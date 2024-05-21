@@ -25,18 +25,18 @@ public:
 
 	HANDLE procHandle;
 
-	std::vector<unsigned long long> addresses;
+	std::vector<uintptr_t> addresses;
 	std::vector<char> types;
 	std::vector<char> bases;
 	std::vector<int> sizes; // for byte arrays
 
-	void AddAddress(unsigned long long address, char type, char base, int size);
+	void AddAddress(uintptr_t address, char type, char base, int size);
 
 	void UpdateListOnTimer(wxTimerEvent& e);
 	template <typename T> void UpdateRow(int row, bool isFloat);
 	void UpdateRowByteArray(int row, int size);
 
-	void WriteValueHandler(wxString input, unsigned long long* address, char type, char base);
+	void WriteValueHandler(wxString input, uintptr_t* address, char type, char base);
 
 	void RemoveRow(int row);
 

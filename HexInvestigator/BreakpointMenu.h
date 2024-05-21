@@ -31,6 +31,8 @@ public:
 	wxBoxSizer* row3Sizer = nullptr;
 	wxBoxSizer* vSizer = nullptr;
 
+	wxTimer* updateListTimer = nullptr;
+
 	enum ids
 	{
 		MainWindowID,
@@ -84,12 +86,8 @@ public:
 
 	DebugThread* debugThread = nullptr;
 
-	HANDLE mainThreadHandle;
-
 	bool SetHardwareBreakpoint(unsigned long long address, BPSize size, BPType type);
-	bool DisableDr0();
-
-	HANDLE GetMainThread(int procId);
+	bool DisableDebugRegisters();
 
 	void AttachDebugger(wxCommandEvent& e);
 	void DetachDebugger(wxCommandEvent& e);
@@ -101,6 +99,8 @@ public:
 	void SetExecuteBP(wxCommandEvent& e);
 
 	void AddAddressToList(unsigned long long address);
+
+	void UpdateList(wxTimerEvent& e);
 
 	void ClearList();
 

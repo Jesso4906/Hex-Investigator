@@ -80,6 +80,10 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	moduleSelect->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	moduleSelect->SetOwnForegroundColour(wxColour(220, 220, 220));
 
+	displayModuleInfo = new wxCheckBox(this, wxID_ANY, "Display Module Info");
+	displayModuleInfo->SetValue(true);
+	displayModuleInfo->SetOwnForegroundColour(wxColour(220, 220, 220));
+
 	column1Sizer = new wxBoxSizer(wxVERTICAL);
 	column2Sizer = new wxBoxSizer(wxVERTICAL);
 	column3Sizer = new wxBoxSizer(wxVERTICAL);
@@ -101,6 +105,7 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	column3Sizer->Add(maxAddrInput, 0, wxLEFT | wxRIGHT, 10);
 	column3Sizer->Add(moduleSelectTxt, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column3Sizer->Add(moduleSelect, 0, wxLEFT | wxRIGHT, 10);
+	column3Sizer->Add(displayModuleInfo, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 
 	hSizer->Add(column1Sizer);
 	hSizer->Add(column2Sizer);

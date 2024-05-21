@@ -9,6 +9,7 @@ EVT_BUTTON(RemoveHBPID, RemoveHBP)
 EVT_BUTTON(SHBPWriteID, SetWriteBP)
 EVT_BUTTON(SHBPReadWriteID, SetReadWriteBP)
 EVT_BUTTON(SHBPExecuteID, SetExecuteBP)
+EVT_TIMER(UpdateTimerID, UpdateList)
 wxEND_EVENT_TABLE()
 
 BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "Breakpoint Menu", wxPoint(50, 50), wxSize(400, 400))
@@ -83,6 +84,8 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	row3Sizer = new wxBoxSizer(wxHORIZONTAL);
 	vSizer = new wxBoxSizer(wxVERTICAL);
 
+	updateListTimer = new wxTimer(this, UpdateTimerID);
+
 	row1Sizer->Add(addressInput, 0, wxALL, 10);
 	row1Sizer->Add(selectSize, 0, wxRight | wxTOP | wxBOTTOM, 10);
 
@@ -106,107 +109,11 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 
 bool BreakpointMenu::SetHardwareBreakpoint(unsigned long long address, BPSize size, BPType type)
 {
-	mainThreadHandle = GetMainThread(GetProcessId(procHandle));
-	
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+	int procId = GetProcessId(procHandle);
 
-	if (!GetThreadContext(mainThreadHandle, &ctx))
-	{
-		return false;
-	}
-
-	ctx.Dr0 = address; // I only make use of the first debug register, becasue there will never be more than one HWBP set at a time
-	ctx.Dr6 = 0;
-
-	std::bitset<sizeof(ctx.Dr7) * 8> dr7; // array of bits
-	std::memcpy(&dr7, &ctx.Dr7, sizeof(ctx.Dr7));
-
-	dr7.set(0, true); // enable local debugging for the first register
-
-	switch (type)
-	{
-	case BPType::ReadWrite:
-		dr7.set(17, true);
-		dr7.set(16, true);
-		break;
-	case BPType::Write:
-		dr7.set(17, false);
-		dr7.set(16, true);
-		break;
-	case BPType::Execute:
-		dr7.set(17, false);
-		dr7.set(16, false);
-		break;
-	}
-
-	switch (size)
-	{
-	case BPSize::OneByte:
-		dr7.set(19, false);
-		dr7.set(18, false);
-		break;
-	case BPSize::TwoByte:
-		dr7.set(19, false);
-		dr7.set(18, true);
-		break;
-	case BPSize::FourByte:
-		dr7.set(19, true);
-		dr7.set(18, true);
-		break;
-	case BPSize::EightByte:
-		dr7.set(19, true);
-		dr7.set(18, false);
-		break;
-	}
-
-	std::memcpy(&ctx.Dr7, &dr7, sizeof(ctx.Dr7));
-
-	if (!SetThreadContext(mainThreadHandle, &ctx))
-	{
-		return false;
-	}
-
-	currentAddress = address;
-	currentSize = size;
-	currentType = type;
-
-	isBPSet = true;
-
-	return true;
-}
-
-bool BreakpointMenu::DisableDr0()
-{
-	CONTEXT ctx = { 0 };
-	ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
-
-	if (!GetThreadContext(mainThreadHandle, &ctx))
-	{
-		return false;
-	}
-
-	ctx.Dr0 = 0;
-	ctx.Dr6 = 0;
-	ctx.Dr7 = 0;
-
-	if (!SetThreadContext(mainThreadHandle, &ctx))
-	{
-		return false;
-	}
-
-	CloseHandle(mainThreadHandle);
-
-	return true;
-}
-
-HANDLE BreakpointMenu::GetMainThread(int procId) 
-{
-	HANDLE result = 0;
-
-	unsigned long long earliestTime = UINT64_MAX;
-
+	// set the debug registers in every thread that is a part of the process
 	HANDLE threadSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0));
+
 	if (threadSnap != INVALID_HANDLE_VALUE)
 	{
 		THREADENTRY32 threadEntry;
@@ -220,26 +127,127 @@ HANDLE BreakpointMenu::GetMainThread(int procId)
 				{
 					HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
 
-					FILETIME creationTime;
-					FILETIME exitTime;
-					FILETIME kernelTime;
-					FILETIME userTime;
-					GetThreadTimes(threadHandle, &creationTime, &exitTime, &kernelTime, &userTime);
+					CONTEXT ctx = { 0 };
+					ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
 
-					unsigned long long timeNum = ((unsigned long long)creationTime.dwHighDateTime) << 32 | creationTime.dwLowDateTime; // combine into a 64 bit value
-
-					if (timeNum < earliestTime)
+					if (threadHandle == INVALID_HANDLE_VALUE || !GetThreadContext(threadHandle, &ctx))
 					{
-						earliestTime = timeNum;
-						result = threadHandle;
+						return false;
 					}
+
+					ctx.Dr0 = address; // I only make use of the first debug register, becasue there will never be more than one HWBP set at a time
+					ctx.Dr6 = 0; // reset status
+
+					std::bitset<sizeof(ctx.Dr7) * 8> dr7; // array of bits
+					std::memcpy(&dr7, &ctx.Dr7, sizeof(ctx.Dr7));
+
+					dr7.set(0, true); // enable local debugging for the first register
+
+					switch (type)
+					{
+					case BPType::ReadWrite:
+						dr7.set(17, true);
+						dr7.set(16, true);
+						break;
+					case BPType::Write:
+						dr7.set(17, false);
+						dr7.set(16, true);
+						break;
+					case BPType::Execute:
+						dr7.set(17, false);
+						dr7.set(16, false);
+						break;
+					}
+
+					switch (size)
+					{
+					case BPSize::OneByte:
+						dr7.set(19, false);
+						dr7.set(18, false);
+						break;
+					case BPSize::TwoByte:
+						dr7.set(19, false);
+						dr7.set(18, true);
+						break;
+					case BPSize::FourByte:
+						dr7.set(19, true);
+						dr7.set(18, true);
+						break;
+					case BPSize::EightByte:
+						dr7.set(19, true);
+						dr7.set(18, false);
+						break;
+					}
+
+					std::memcpy(&ctx.Dr7, &dr7, sizeof(ctx.Dr7));
+
+					if (!SetThreadContext(threadHandle, &ctx))
+					{
+						return false;
+					}
+
+					CloseHandle(threadHandle);
 				}
 			} while (Thread32Next(threadSnap, &threadEntry));
 		}
 	}
+
 	CloseHandle(threadSnap);
-	
-	return result;
+
+	currentAddress = address;
+	currentSize = size;
+	currentType = type;
+
+	isBPSet = true;
+
+	return true;
+}
+
+bool BreakpointMenu::DisableDebugRegisters()
+{
+	int procId = GetProcessId(procHandle);
+
+	HANDLE threadSnap = (CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0));
+
+	if (threadSnap != INVALID_HANDLE_VALUE)
+	{
+		THREADENTRY32 threadEntry;
+		threadEntry.dwSize = sizeof(threadEntry);
+
+		if (Thread32First(threadSnap, &threadEntry))
+		{
+			do
+			{
+				if (threadEntry.th32OwnerProcessID == procId)
+				{
+					HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
+
+					CONTEXT ctx = { 0 };
+					ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+					if (threadHandle == INVALID_HANDLE_VALUE || !GetThreadContext(threadHandle, &ctx))
+					{
+						return false;
+					}
+
+					ctx.Dr0 = 0;
+					ctx.Dr6 = 0;
+					ctx.Dr7 = 0;
+
+					if (!SetThreadContext(threadHandle, &ctx))
+					{
+						return false;
+					}
+
+					CloseHandle(threadHandle);
+				}
+			} while (Thread32Next(threadSnap, &threadEntry));
+		}
+	}
+
+	CloseHandle(threadSnap);
+
+	return true;
 }
 
 void BreakpointMenu::AttachDebugger(wxCommandEvent& e)
@@ -269,6 +277,8 @@ void BreakpointMenu::AttachDebugger(wxCommandEvent& e)
 		return;
 	}
 
+	updateListTimer->Start(50);
+
 	attachDebugger->Disable();
 	detachDebugger->Enable();
 
@@ -295,6 +305,8 @@ void BreakpointMenu::DetachDebugger(wxCommandEvent& e)
 	}
 	isDebuggerAttached = false;
 
+	updateListTimer->Stop();
+
 	shbpWrite->Disable();
 	shbpReadWrite->Disable();
 	shbpExecute->Disable();
@@ -309,7 +321,7 @@ void BreakpointMenu::DetachDebugger(wxCommandEvent& e)
 
 void BreakpointMenu::RemoveHBP(wxCommandEvent& e)
 {
-	if (!DisableDr0())
+	if (!DisableDebugRegisters())
 	{
 		wxMessageBox("Error turning off Dr0", "Can't Remove Hardware Breakpoint");
 		return;
@@ -421,7 +433,6 @@ void BreakpointMenu::AddAddressToList(unsigned long long address)
 		if (entries[i].address == address) 
 		{
 			entries[i].hits++;
-			addrList->SetCellValue(i, 1, std::to_string(entries[i].hits));
 			return;
 		}
 	}
@@ -432,14 +443,18 @@ void BreakpointMenu::AddAddressToList(unsigned long long address)
 	entries.push_back(entry);
 
 	addrList->AppendRows();
+}
 
-	int row = entries.size()-1;
+void BreakpointMenu::UpdateList(wxTimerEvent& e) // if AddAddressToList called SetCellValue instead it will crash the program if it is called to often
+{
+	for (int i = 0; i < entries.size(); i++)
+	{
+		std::stringstream addressToHex;
+		addressToHex << std::hex << entries[i].address;
+		addrList->SetCellValue(i, 0, addressToHex.str());
 
-	std::stringstream addressToHex;
-	addressToHex << std::hex << address;
-	addrList->SetCellValue(row, 0, addressToHex.str());
-
-	addrList->SetCellValue(row, 1, "1");
+		addrList->SetCellValue(i, 1, std::to_string(entries[i].hits));
+	}
 }
 
 void BreakpointMenu::ClearList() 

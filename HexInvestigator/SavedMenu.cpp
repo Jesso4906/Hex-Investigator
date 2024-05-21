@@ -128,7 +128,8 @@ template <typename T> void SavedMenu::UpdateRow(int row, bool isFloat)
 	else
 	{
 		char buffer[100];
-		valueStr = std::string(_itoa(value, buffer, bases[row]));
+		if (value < 0) { valueStr = std::string(lltoa(value, buffer, bases[row])); }
+		else { valueStr = std::string(ulltoa(value, buffer, bases[row])); }
 	}
 
 	addrList->SetCellValue(row, 3, valueStr);
@@ -216,8 +217,10 @@ void SavedMenu::WriteValueHandler(wxString input, unsigned long long* address, c
 		}
 		case 8:
 		{
-			double targetValue = 0;
-			if (!input.ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+			double doubleVal = 0;
+			if (!input.ToDouble(&doubleVal)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			float targetValue = (float)doubleVal;
 			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
 			break;
 		}

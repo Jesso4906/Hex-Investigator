@@ -553,7 +553,8 @@ template <typename T> void Main::UpdateList(bool isFloat)
 		else
 		{
 			char buffer[100];
-			valueStr = std::string(_itoa(value, buffer, base));
+			if (value < 0) { valueStr = std::string(lltoa(value, buffer, base)); }
+			else { valueStr = std::string(ulltoa(value, buffer, base)); }
 		}
 
 		addrList->SetCellValue(i, 2, valueStr);
@@ -565,36 +566,43 @@ template <typename T> void Main::UpdateList(bool isFloat)
 			addrList->SetCellValue(i, 1, offsetToHex.str());
 		}
 
-		if (addrList->GetCellValue(i, 0) != "") { continue; }
-
-		AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
+		bool displayModuleInfo = scanSettingsMenu->displayModuleInfo->IsChecked();
 
 		std::stringstream addressToHex;
 
-		if (info.rva != 0) // it's an address that is part of a module
+		if(displayModuleInfo)
 		{
-			addressToHex << std::hex << info.rva;
-
-			addrList->SetCellValue(i, 0, info.moduleName + "+" + addressToHex.str() + " " + info.sectionName);
-
-			switch (info.secitonType) 
+			if(addrList->GetCellValue(i, 0).GetChar(0) != '<')
 			{
-			case info.SectionType::Code:
-				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
-				break;
-			case info.SectionType::InitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
-				break;
-			case info.SectionType::UninitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
-				break;
+				AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
+				
+				if (info.rva != 0) // it's an address that is part of a module
+				{
+					addressToHex << std::hex << info.rva;
+
+					addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
+
+					switch (info.secitonType)
+					{
+					case info.SectionType::Code:
+						addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+						break;
+					case info.SectionType::InitData:
+						addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+						break;
+					case info.SectionType::UninitData:
+						addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+						break;
+					}
+				}
 			}
 		}
-		else 
+		else if(addrList->GetCellValue(i, 0).GetChar(0) == '<')
 		{
 			addressToHex << std::hex << addressPool[i];
 
 			addrList->SetCellValue(i, 0, addressToHex.str());
+			addrList->SetCellTextColour(i, 0, wxColour(220, 220, 220));
 		}
 	}
 }
@@ -627,36 +635,43 @@ void Main::UpdateListByteArray(int size)
 			addrList->SetCellValue(i, 1, offsetToHex.str());
 		}
 
-		if (addrList->GetCellValue(i, 0) != "") { continue; }
-
-		AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
+		bool displayModuleInfo = scanSettingsMenu->displayModuleInfo->IsChecked();
 
 		std::stringstream addressToHex;
 
-		if (info.rva != 0) // it's an address that is part of a module
+		if (displayModuleInfo)
 		{
-			addressToHex << std::hex << info.rva;
-
-			addrList->SetCellValue(i, 0, info.moduleName + "+" + addressToHex.str() + " " + info.sectionName);
-
-			switch (info.secitonType)
+			if (addrList->GetCellValue(i, 0).GetChar(0) != '<')
 			{
-			case info.SectionType::Code:
-				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
-				break;
-			case info.SectionType::InitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
-				break;
-			case info.SectionType::UninitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
-				break;
+				AddressModuleInfo info = GetAddressModuleInfo(addressPool[i]);
+
+				if (info.rva != 0) // it's an address that is part of a module
+				{
+					addressToHex << std::hex << info.rva;
+
+					addrList->SetCellValue(i, 0, "<" + info.moduleName + ">+" + addressToHex.str() + " " + info.sectionName);
+
+					switch (info.secitonType)
+					{
+					case info.SectionType::Code:
+						addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+						break;
+					case info.SectionType::InitData:
+						addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+						break;
+					case info.SectionType::UninitData:
+						addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+						break;
+					}
+				}
 			}
 		}
-		else
+		else if (addrList->GetCellValue(i, 0).GetChar(0) == '<')
 		{
 			addressToHex << std::hex << addressPool[i];
 
 			addrList->SetCellValue(i, 0, addressToHex.str());
+			addrList->SetCellTextColour(i, 0, wxColour(220, 220, 220));
 		}
 	}
 }
@@ -801,7 +816,7 @@ void Main::CheckKeyInput(wxTimerEvent& e)
 	
 	wxCommandEvent empty = 0;
 	
-	if (GetAsyncKeyState(scanSettingsMenu->scanKeybind) & 1) // K
+	if (GetAsyncKeyState(scanSettingsMenu->scanKeybind) & 1)
 	{
 		if (scanning) { NextScanButtonPress(empty); }
 		else { FirstScanButtonPress(empty); }
@@ -845,10 +860,6 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	UpdateModuleHandles();
 
 	UpdateBaseAndRoundingAndThreads();
-
-	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
-
-	if (freezeDuringScan) { FreezeProcess(true); }
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	unsigned long long originalMax = memoryScanSettings.maxAddress;
@@ -1065,6 +1076,10 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		memoryScanSettings.minAddress = memoryScanSettings.maxAddress;
 	}
 
+	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
+
+	if (freezeDuringScan) { FreezeProcess(true); }
+
 	for (int i = 0; i < threads; i++) 
 	{
 		scanThreads[i].join(); // wait for thread to finish
@@ -1076,14 +1091,23 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		byteLists[i].clear(); byteLists[i].shrink_to_fit();
 	}
 
+	// add commmas
+	std::string resultsStr = std::to_string(results);
+	int n = resultsStr.length() - 3;
+	while (n > 0) 
+	{
+		resultsStr.insert(n, ",");
+		n -= 3;
+	}
+
 	if (results > 1000)
 	{
-		resultsTxt->SetLabel("Results: " + std::to_string(results) + " (1000 shown)");
+		resultsTxt->SetLabel("Results: " + resultsStr + " (1,000 shown)");
 		results = 1000;
 	}
 	else
 	{
-		resultsTxt->SetLabel("Results: " + std::to_string(results));
+		resultsTxt->SetLabel("Results: " + resultsStr);
 	}
 
 	if (results != 0 && !manualUpdate->IsChecked()) 
@@ -1121,10 +1145,6 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	UpdateBaseAndRoundingAndThreads();
 
 	bool noInput = selectScanType->GetSelection() > 7; // input will not be read if scan type is Increased, Decreased, Changed, or Unchanged
-
-	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
-
-	if (freezeDuringScan) { FreezeProcess(true); }
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	unsigned long long originalMax = addressPool.size();
@@ -1340,6 +1360,10 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 		}
 	}
 
+	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
+
+	if (freezeDuringScan) { FreezeProcess(true); }
+
 	for (int i = 0; i < threads; i++)
 	{
 		scanThreads[i].join(); // wait for thread to finish
@@ -1358,15 +1382,24 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 	int rows = addrList->GetNumberRows();
 	if (rows > 0) { addrList->DeleteRows(0, rows); }
+
+	// add commmas
+	std::string resultsStr = std::to_string(results);
+	int n = resultsStr.length() - 3;
+	while (n > 0)
+	{
+		resultsStr.insert(n, ",");
+		n -= 3;
+	}
 	
 	if (results > 1000)
 	{
-		resultsTxt->SetLabel("Results: " + std::to_string(results) + " (1000 shown)");
+		resultsTxt->SetLabel("Results: " + resultsStr + " (1,000 shown)");
 		results = 1000;
 	}
 	else
 	{
-		resultsTxt->SetLabel("Results: " + std::to_string(results));
+		resultsTxt->SetLabel("Results: " + resultsStr);
 	}
 
 	if (results != 0 && !manualUpdate->IsChecked()) 
@@ -1493,8 +1526,10 @@ void Main::WriteValueHandler(wxString input, unsigned long long* address)
 		}
 		case 8:
 		{
-			double targetValue = 0;
-			if (!input.ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+			double doubleVal = 0;
+			if (!input.ToDouble(&doubleVal)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			float targetValue = (float)doubleVal;
 			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
 			break;
 		}

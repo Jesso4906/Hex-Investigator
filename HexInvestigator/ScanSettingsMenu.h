@@ -27,6 +27,8 @@ public:
 	wxStaticText* moduleSelectTxt = nullptr;
 	wxChoice* moduleSelect = nullptr;
 
+	wxCheckBox* displayModuleInfo = nullptr;
+
 	wxStaticText* scanKeybindLabel = nullptr;
 	wxChoice* scanKeybindSelect = nullptr;
 

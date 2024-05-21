@@ -20,5 +20,10 @@ public:
 	void WriteValue(HANDLE procHandle, unsigned long long* address, void* newValue, int size);
 
 	void CopyToClipboard(const char* txt);
+
+
+	char* i64toa(unsigned long long val, char* sz, unsigned radix, int neg);
+	char* lltoa(long long val, char* sz, unsigned radix);;
+	char* ulltoa(unsigned long long val, char* sz, unsigned radix);
 };
 

@@ -90,7 +90,7 @@ public:
 
 		int protection, scanType, roundingValue;
 
-		bool roundFloats, scanImageMem, scanMappedMem, scanPrivateMem, alignMemory;
+		bool roundFloats, scanImageMem, scanMappedMem, scanPrivateMem, alignMemory, scanByRegions;
 	};
 
 	struct AddressModuleInfo 

@@ -209,15 +209,17 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	_MEMORY_BASIC_INFORMATION mbi;
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
+		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
+		
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
 			unsigned char* buffer = new unsigned char[mbi.RegionSize];
 
-			ReadProcessMemory(procHandle, mbi.BaseAddress, buffer, mbi.RegionSize, 0);
+			ReadProcessMemory(procHandle, (void*)baseAddress, buffer, regionSize, 0);
 
-			for (int i = 0; i < mbi.RegionSize; i += offset)
+			for (int i = 0; i < regionSize; i += offset)
 			{
 				T value = *(T*)(buffer + i);
 
@@ -237,7 +239,7 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 			delete[] buffer;
 		}
 
-		baseAddress += mbi.RegionSize;
+		baseAddress += regionSize;
 	}
 
 	*addressesPtr = newAddresses;
@@ -257,15 +259,17 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 	_MEMORY_BASIC_INFORMATION mbi;
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
+		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
+		
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
-			unsigned char* buffer = new unsigned char[mbi.RegionSize];
+			unsigned char* buffer = new unsigned char[regionSize];
 
-			ReadProcessMemory(procHandle, mbi.BaseAddress, buffer, mbi.RegionSize, 0);
+			ReadProcessMemory(procHandle, (void*)baseAddress, buffer, regionSize, 0);
 
-			for (int i = 0; i < mbi.RegionSize; i++)
+			for (int i = 0; i < regionSize; i++)
 			{
 				for (int j = 0; j < size; j++)
 				{
@@ -281,7 +285,7 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 			delete[] buffer;
 		}
 
-		baseAddress += mbi.RegionSize;
+		baseAddress += regionSize;
 	}
 
 	*addressesPtr = newAddresses;
@@ -304,23 +308,25 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	_MEMORY_BASIC_INFORMATION mbi;
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
+		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
+		
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
 		{
 			newAddresses.push_back(baseAddress); // store the base address
-			newAddresses.push_back(mbi.RegionSize); // store the size
+			newAddresses.push_back(regionSize); // store the size
 			
-			unsigned char* buffer = new unsigned char[mbi.RegionSize];
-			ReadProcessMemory(procHandle, mbi.BaseAddress, buffer, mbi.RegionSize, 0);
-			newBytes.insert(newBytes.end(), buffer, buffer + mbi.RegionSize); // store data
+			unsigned char* buffer = new unsigned char[regionSize];
+			ReadProcessMemory(procHandle, (void*)baseAddress, buffer, regionSize, 0);
+			newBytes.insert(newBytes.end(), buffer, buffer + regionSize); // store data
 
 			delete[] buffer;
 
-			results += mbi.RegionSize / offset;
+			results += regionSize / offset;
 		}
 
-		baseAddress += mbi.RegionSize;
+		baseAddress += regionSize;
 	}
 
 	*addressesPtr = newAddresses;
@@ -1088,10 +1094,10 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		n -= 3;
 	}
 
-	if (results > 1000)
+	if (results > 10000)
 	{
-		resultsTxt->SetLabel("Results: " + resultsStr + " (1,000 shown)");
-		results = 1000;
+		resultsTxt->SetLabel("Results: " + resultsStr + " (10,000 shown)");
+		results = 10000;
 	}
 	else
 	{
@@ -1380,10 +1386,10 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 		n -= 3;
 	}
 	
-	if (results > 1000)
+	if (results > 10000)
 	{
-		resultsTxt->SetLabel("Results: " + resultsStr + " (1,000 shown)");
-		results = 1000;
+		resultsTxt->SetLabel("Results: " + resultsStr + " (10,000 shown)");
+		results = 10000;
 	}
 	else
 	{
@@ -1732,15 +1738,12 @@ void Main::UpdateValueType(wxCommandEvent& e)
 		baseInputLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
 		baseInputLabel->Refresh();
 		baseInput->SetEditable(true);
-		baseInput->SetLabel("10");
 		baseInput->SetOwnForegroundColour(wxColour(220, 220, 220));
 		baseInput->Refresh();
 		roundInput->SetEditable(false);
 		roundInput->SetValue("");
 		roundFloats->SetValue(false);
 		roundFloats->Disable();
-
-		base = 10;
 	}
 	else if (type == 10) // bytes
 	{

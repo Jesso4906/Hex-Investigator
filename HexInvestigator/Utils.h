@@ -7,12 +7,12 @@
 class Utils
 {
 public:
-	const char* typeStrs[11] =
+	const char* typeStrs[12] =
 	{
 		"Int64", "Int32", "Int16", "Int8",
 		"UInt64", "UInt32", "UInt16", "UInt8",
 		"Float", "Double",
-		"Bytes"
+		"Bytes", "ASCII"
 	};
 
 	const int updateRate = 150;

@@ -156,7 +156,7 @@ public:
 	bool ParseByteArray(wxString str, unsigned char** bytes);
 
 	template <typename T> void UpdateList(bool isFloat);
-	void UpdateListByteArray(int size);
+	void UpdateListByteArray(int size, bool ascii);
 
 	AddressModuleInfo GetAddressModuleInfo(uintptr_t address);
 

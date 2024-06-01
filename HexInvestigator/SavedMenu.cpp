@@ -109,7 +109,10 @@ void SavedMenu::UpdateListOnTimer(wxTimerEvent& e)
 			UpdateRow<double>(i, true);
 			break;
 		case 10:
-			UpdateRowByteArray(i, sizes[i]);
+			UpdateRowByteArray(i, sizes[i], false);
+			break;
+		case 11:
+			UpdateRowByteArray(i, sizes[i], true);
 			break;
 		}
 	}
@@ -135,20 +138,28 @@ template <typename T> void SavedMenu::UpdateRow(int row, bool isFloat)
 	addrList->SetCellValue(row, 3, valueStr);
 }
 
-void SavedMenu::UpdateRowByteArray(int row, int size)
+void SavedMenu::UpdateRowByteArray(int row, int size, bool ascii)
 {
 	unsigned char* value = new unsigned char[size];
 	ReadProcessMemory(procHandle, (uintptr_t*)addresses[row], value, size, 0);
 
 	std::string valueStr;
-	for (int i = 0; i < size; i++)
-	{
-		std::stringstream byteToHex;
-		byteToHex << std::hex << (int)value[i];
-		valueStr += byteToHex.str() + ' ';
-	}
 
-	delete[] value;
+	if (ascii) 
+	{
+		valueStr = std::string((const char*)value).substr(0, size);
+	}
+	else 
+	{
+		for (int i = 0; i < size; i++)
+		{
+			std::stringstream byteToHex;
+			byteToHex << std::hex << (int)value[i];
+			valueStr += byteToHex.str() + ' ';
+		}
+
+		delete[] value;
+	}
 
 	addrList->SetCellValue(row, 3, valueStr);
 }
@@ -250,7 +261,7 @@ void SavedMenu::AddAddressButtonPress(wxCommandEvent& e)
 	uintptr_t address;
 	addressInput.ToULongLong(&address, 16);
 
-	char type = wxGetSingleChoiceIndex("Type", "Enter Type", wxArrayString(11, typeStrs));
+	char type = wxGetSingleChoiceIndex("Type", "Enter Type", wxArrayString(12, typeStrs));
 	if (type == -1) { return; }
 
 	int base = 10;
@@ -262,7 +273,7 @@ void SavedMenu::AddAddressButtonPress(wxCommandEvent& e)
 		base = wxGetNumberFromUser("Enter Base", "Base:", "Base", 10, 2, 36);
 		if (base == -1) { return; }
 	}
-	else if (type == 10) //byte array
+	else if (type > 9) //byte array or string
 	{
 		base = 16;
 		size = wxGetNumberFromUser("Enter Size", "Size:", "Size", 1, 1, 1000);
@@ -278,7 +289,7 @@ void SavedMenu::RightClickOptions(wxGridEvent& e)
 	int row = e.GetRow(); // row right clicked on
 	wxArrayInt selectedRows = addrList->GetSelectedRows(); // all rows also selected
 
-	if (types[row] != 10) // cant write if its a byte array
+	if (types[row] > 9) // cant write if its a byte array
 	{
 		wxMenuItem* write = new wxMenuItem(0, 200, "Write Value");
 		write->SetBackgroundColour(wxColour(60, 60, 60));

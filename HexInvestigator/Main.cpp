@@ -28,7 +28,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	selectProcMenu = new SelectProcessMenu(this);
 
-	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(11, typeStrs));
+	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(12, typeStrs));
 	selectValueType->SetSelection(1);
 	selectValueType->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	selectValueType->SetOwnForegroundColour(wxColour(220, 220, 220));
@@ -577,7 +577,9 @@ template <typename T> void Main::UpdateList(bool isFloat)
 
 		std::stringstream addressToHex;
 
-		char firstChar = addrList->GetCellValue(i, 0).GetChar(0);
+		char firstChar = 0;
+		if (!addrList->GetCellValue(i, 0).IsEmpty()) { firstChar = addrList->GetCellValue(i, 0).GetChar(0); }
+
 		if (info.rva != 0 && firstChar != '<')
 		{
 			addressToHex << std::hex << info.rva;
@@ -607,7 +609,7 @@ template <typename T> void Main::UpdateList(bool isFloat)
 	}
 }
 
-void Main::UpdateListByteArray(int size)
+void Main::UpdateListByteArray(int size, bool ascii)
 {
 	for (int i = addrList->GetFirstFullyVisibleRow(); i < addrList->GetNumberRows(); i++)
 	{
@@ -616,17 +618,24 @@ void Main::UpdateListByteArray(int size)
 		unsigned char* value = new unsigned char[size];
 		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], value, size, 0);
 
-		std::string valueStr;
-		for (int i = 0; i < size; i++)
+		if (ascii) 
 		{
-			std::stringstream byteToHex;
-			byteToHex << std::hex << (int)value[i];
-			valueStr += byteToHex.str() + ' ';
+			addrList->SetCellValue(i, 2, std::string((const char*)value).substr(0, size));
 		}
+		else 
+		{
+			std::string valueStr;
+			for (int i = 0; i < size; i++)
+			{
+				std::stringstream byteToHex;
+				byteToHex << std::hex << (int)value[i];
+				valueStr += byteToHex.str() + ' ';
+			}
 
-		delete[] value;
+			delete[] value;
 
-		addrList->SetCellValue(i, 2, valueStr);
+			addrList->SetCellValue(i, 2, valueStr);
+		}
 
 		if (i != 0)
 		{
@@ -640,7 +649,9 @@ void Main::UpdateListByteArray(int size)
 
 		std::stringstream addressToHex;
 
-		char firstChar = addrList->GetCellValue(i, 0).GetChar(0);
+		char firstChar = 0;
+		if (!addrList->GetCellValue(i, 0).IsEmpty()) { firstChar = addrList->GetCellValue(i, 0).GetChar(0); }
+
 		if (info.rva != 0 && firstChar != '<')
 		{
 			addressToHex << std::hex << info.rva;
@@ -1065,6 +1076,18 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
+		case 11:
+		{
+			wxString val = valueInput->GetValue();
+			byteArraySize = val.length();
+			const char* targetValue = new char[byteArraySize];
+			memcpy((void*)targetValue, val.ToAscii().data(), byteArraySize);
+
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
+				{ *results += main->FirstScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
+				this, (unsigned char*)targetValue, &results, memoryScanSettings, &addressLists[i]);
+			break;
+		}
 		}
 
 		memoryScanSettings.minAddress = memoryScanSettings.maxAddress;
@@ -1127,7 +1150,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	scanning = true;
 
-	if (valueType == 10) { return; } // dont change the scan options if the type is a byte array
+	if (valueType > 9) { return; } // dont change the scan options if the type is a byte array
 	selectScanType->Set(wxArrayString(12, nextScans));
 	selectScanType->SetSelection(0);
 	valueInput->Show();
@@ -1351,6 +1374,18 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
+		case 11:
+		{
+			wxString val = valueInput->GetValue();
+			byteArraySize = val.length();
+			const char* targetValue = new char[byteArraySize];
+			memcpy((void*)targetValue, val.ToAscii().data(), byteArraySize);
+
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
+				{ *results += main->NextScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
+				this, (unsigned char*)targetValue, &results, memoryScanSettings, &addressLists[i]);
+			break;
+		}
 		}
 	}
 
@@ -1446,7 +1481,10 @@ void Main::UpdateListOnTimer(wxTimerEvent& e)
 		UpdateList<double>(true);
 		break;
 	case 10:
-		UpdateListByteArray(byteArraySize);
+		UpdateListByteArray(byteArraySize, false);
+		break;
+	case 11:
+		UpdateListByteArray(byteArraySize, true);
 		break;
 	}
 }
@@ -1590,7 +1628,7 @@ void Main::RightClickOptions(wxGridEvent& e)
 
 		}, 100);
 
-	if (selectValueType->GetSelection() != 10) // cant write if its a byte array
+	if (selectValueType->GetSelection() < 10) // cant write if its a byte array
 	{
 		wxMenuItem* write = menu.Append(101, "Write Value");
 		write->SetBackgroundColour(wxColour(60, 60, 60));
@@ -1710,7 +1748,7 @@ void Main::UpdateBaseAndRoundingAndThreads()
 
 	//Get and check threads
 	threadsInput->GetValue().ToInt(&threads);
-	if (threads < 1 || threads > 999 || (scanning && threads > addressPool.size())) { threads = 1; baseInput->SetValue("1"); }
+	if (threads < 1 || threads > 999 || (scanning && threads > addressPool.size())) { threads = 1; threadsInput->SetValue("1"); }
 }
 
 void Main::UpdateRoundFloats(wxCommandEvent& e)
@@ -1745,7 +1783,7 @@ void Main::UpdateValueType(wxCommandEvent& e)
 		roundFloats->SetValue(false);
 		roundFloats->Disable();
 	}
-	else if (type == 10) // bytes
+	else if (type > 9) // bytes or string
 	{
 		selectScanType->Set(wxArrayString(1, "Equal"));
 		selectScanType->SetSelection(0);

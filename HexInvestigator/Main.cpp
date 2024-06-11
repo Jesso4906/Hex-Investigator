@@ -16,6 +16,7 @@ EVT_BUTTON(ManualUpdateButtonID, ManuallyUpdate)
 EVT_CHECKBOX(RoundFloatsID, UpdateRoundFloats)
 EVT_BUTTON(OpenSavedListID, OpenSavedMenu)
 EVT_BUTTON(OpenBreakpointMenuID, OpenBreakpointMenu)
+EVT_BUTTON(OpenHexCalcID, OpenHexCalculator)
 wxEND_EVENT_TABLE()
 
 Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50, 50), wxSize(550, 650))
@@ -117,17 +118,23 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	savedMenu = new SavedMenu(procHandle);
 
-	openSaved = new wxButton(this, OpenSavedListID, "Open Saved List", wxPoint(0, 0), wxSize(115, 25));
+	openSaved = new wxButton(this, OpenSavedListID, "Saved Addresses", wxPoint(0, 0), wxSize(110, 25));
 	openSaved->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	openSaved->SetOwnForegroundColour(wxColour(220, 220, 220));
 	openSaved->Disable();
 
 	breakpointMenu = new BreakpointMenu(procHandle);
 
-	openBreakpointer = new wxButton(this, OpenBreakpointMenuID, "Open Breakpoint Menu", wxPoint(0, 0), wxSize(135, 25));
+	openBreakpointer = new wxButton(this, OpenBreakpointMenuID, "Breakpoint Menu", wxPoint(0, 0), wxSize(110, 25));
 	openBreakpointer->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	openBreakpointer->SetOwnForegroundColour(wxColour(220, 220, 220));
 	openBreakpointer->Disable();
+
+	hexCalculator = new HexCalculator();
+
+	openHexCalculator = new wxButton(this, OpenHexCalcID, "Hex Calculator", wxPoint(0, 0), wxSize(110, 25));
+	openHexCalculator->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	openHexCalculator->SetOwnForegroundColour(wxColour(220, 220, 220));
 
 	row1Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row2Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -152,6 +159,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	row3Sizer->Add(resultsTxt, 0, wxLEFT, 10);
 	row3Sizer->AddStretchSpacer(1);
+	row3Sizer->Add(openHexCalculator, 0, wxRIGHT, 10);
 	row3Sizer->Add(openBreakpointer, 0, wxRIGHT, 10);
 	row3Sizer->Add(openSaved, 0, wxRIGHT, 10);
 	
@@ -813,7 +821,7 @@ void Main::FreezeProcess(bool freeze)
 	}
 }
 
-// gui functions
+// other functions
 
 void Main::CheckKeyInput(wxTimerEvent& e)
 {
@@ -1704,6 +1712,11 @@ void Main::OpenBreakpointMenu(wxCommandEvent& e)
 	breakpointMenu->OpenMenu(GetPosition());
 }
 
+void Main::OpenHexCalculator(wxCommandEvent& e)
+{
+	hexCalculator->OpenMenu(GetPosition());
+}
+
 void Main::ToggleManualUpdate(wxCommandEvent& e)
 {
 	if (manualUpdate->GetValue())
@@ -1851,6 +1864,8 @@ void Main::CloseApp(wxCloseEvent& e)
 	wxCommandEvent e2; breakpointMenu->DetachDebugger(e2);
 	breakpointMenu->Destroy();
 
+	hexCalculator->Destroy();
+
 	delete updateTimer;
 	delete keyInputTimer;
 
@@ -1933,7 +1948,7 @@ void SelectProcessMenu::RefreshProcessList()
 
 void SelectProcessMenu::SearchProcessList(wxCommandEvent& e)
 {
-	wxString input = processNameInput->GetValue();
+	wxString input = processNameInput->GetValue().Lower();
 	unsigned int inputLen = input.Length();
 
 	if (input.IsEmpty())
@@ -1951,13 +1966,14 @@ void SelectProcessMenu::SearchProcessList(wxCommandEvent& e)
 
 	for (int i = 0; i < processNames->GetCount(); i++)
 	{
-		unsigned int currentNameLen = processNames->Item(i).Length();
+		wxString currentProcessName = processNames->Item(i).Lower();
+		unsigned int currentNameLen = currentProcessName.Length();
 
 		for (int j = 0; j < currentNameLen; j++)
 		{
 			for (int k = 0; k < inputLen; k++)
 			{
-				if (processNames->Item(i).GetChar(j + k) != input.GetChar(k))
+				if (currentProcessName.GetChar(j + k) != input.GetChar(k))
 				{
 					break;
 				}
@@ -1977,8 +1993,8 @@ void SelectProcessMenu::SelectProcess(wxCommandEvent& e)
 	main->UpdateProcessSelection(currentProcIds[processList->GetSelection()]);
 
 	// close 
-	wxCloseEvent* e2 = (wxCloseEvent*)0;
-	CloseMenu(*e2);
+	wxCloseEvent e2;
+	CloseMenu(e2);
 }
 
 void SelectProcessMenu::OpenMenu(wxPoint position)

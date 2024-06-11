@@ -9,6 +9,7 @@
 #include "ScanSettingsMenu.h"
 #include "SavedMenu.h"
 #include "BreakpointMenu.h"
+#include "HexCalculator.h"
 
 #include "imagehlp.h"
 #pragma comment( lib, "imagehlp.lib" )
@@ -33,9 +34,11 @@ public:
 
 	SavedMenu* savedMenu = nullptr;
 	BreakpointMenu* breakpointMenu = nullptr;
+	HexCalculator* hexCalculator = nullptr;
 
 	wxButton* openSaved = nullptr;
 	wxButton* openBreakpointer = nullptr;
+	wxButton* openHexCalculator = nullptr;
 
 	wxTextCtrl* valueInput = nullptr;
 
@@ -80,6 +83,7 @@ public:
 		AddressListID,
 		OpenSavedListID,
 		OpenBreakpointMenuID,
+		OpenHexCalcID,
 		UpdateTimerID,
 		KeyInputTimerID
 	};
@@ -164,8 +168,6 @@ public:
 
 	void FreezeProcess(bool freeze);
 
-	// gui functions
-
 	void OpenSelectProcessMenu(wxCommandEvent& e);
 	void UpdateProcessSelection(DWORD procId);
 
@@ -191,6 +193,8 @@ public:
 	void OpenSavedMenu(wxCommandEvent& e);
 
 	void OpenBreakpointMenu(wxCommandEvent& e);
+
+	void OpenHexCalculator(wxCommandEvent& e);
 
 	void UpdateRoundFloats(wxCommandEvent& e);
 

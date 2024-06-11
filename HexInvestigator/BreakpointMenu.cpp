@@ -21,12 +21,14 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addressInput = new wxTextCtrl(this, wxID_ANY, "0", wxPoint(0, 0), wxSize(310, 25));
 	addressInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	addressInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	addressInput->SetToolTip("Address to set a breakpoint on");
 	addressInput->Disable();
 
 	selectSize = new wxChoice(this, wxID_ANY, wxPoint(0, 0), wxSize(40, 25), wxArrayString(4, sizeStrs));
 	selectSize->SetSelection(0);
 	selectSize->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	selectSize->SetOwnForegroundColour(wxColour(220, 220, 220));
+	selectSize->SetToolTip("Size of breakpoint");
 	selectSize->Disable();
 
 	attachDebugger = new wxButton(this, AttachDebuggerID, "Attach Debugger", wxPoint(0, 0), wxSize(100, 25));
@@ -41,21 +43,25 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	removeHBP = new wxButton(this, RemoveHBPID, "Remove HBP", wxPoint(0, 0), wxSize(100, 25));
 	removeHBP->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	removeHBP->SetOwnForegroundColour(wxColour(220, 220, 220));
+	removeHBP->SetToolTip("Remove hardware breakpoint");
 	removeHBP->Disable();
 
 	shbpWrite = new wxButton(this, SHBPWriteID, "Set HBP Write", wxPoint(0, 0), wxSize(100, 25));
 	shbpWrite->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	shbpWrite->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpWrite->SetToolTip("Set hardware breakpoint write");
 	shbpWrite->Disable();
 
 	shbpReadWrite = new wxButton(this, SHBPReadWriteID, "Set HBP Read Write", wxPoint(0, 0), wxSize(120, 25));
 	shbpReadWrite->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	shbpReadWrite->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpReadWrite->SetToolTip("Set hardware breakpoint read write");
 	shbpReadWrite->Disable();
 
 	shbpExecute = new wxButton(this, SHBPExecuteID, "Set HBP Execute", wxPoint(0, 0), wxSize(100, 25));
 	shbpExecute->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	shbpExecute->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpExecute->SetToolTip("Set hardware breakpoint exectue");
 	shbpExecute->Disable();
 
 	addrList = new wxGrid(this, AddressListID, wxPoint(0, 0), wxSize(9999, 9999));
@@ -79,6 +85,9 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetColSize(1, 9999);
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
+	infoAboutAddresses = new wxStaticText(this, wxID_ANY, "*Addresses here correspond to the instruction after the hit instruction");
+	infoAboutAddresses->SetOwnForegroundColour(wxColour(220, 220, 220));
+
 	row1Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row2Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row3Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -97,6 +106,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	row3Sizer->Add(shbpReadWrite, 0, wxCENTER | wxRIGHT | wxLEFT | wxBOTTOM, 10);
 	row3Sizer->Add(shbpExecute, 0, wxCENTER | wxRIGHT | wxLEFT | wxBOTTOM, 10);
 
+	vSizer->Add(infoAboutAddresses, 0, wxLEFT, 10);
 	vSizer->Add(row1Sizer, 0, wxEXPAND | wxCENTER);
 	vSizer->Add(row2Sizer, 0, wxEXPAND | wxCENTER);
 	vSizer->Add(row3Sizer, 0, wxEXPAND | wxCENTER);

@@ -26,6 +26,8 @@ public:
 
 	wxGrid* addrList = nullptr;
 
+	wxStaticText* infoAboutAddresses = nullptr;
+
 	wxBoxSizer* row1Sizer = nullptr;
 	wxBoxSizer* row2Sizer = nullptr;
 	wxBoxSizer* row3Sizer = nullptr;

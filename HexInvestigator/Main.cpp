@@ -118,21 +118,21 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	savedMenu = new SavedMenu(procHandle);
 
-	openSaved = new wxButton(this, OpenSavedListID, "Saved Addresses", wxPoint(0, 0), wxSize(110, 25));
+	openSaved = new wxButton(this, OpenSavedListID, "Saved Addresses", wxPoint(0, 0), wxSize(100, 25));
 	openSaved->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	openSaved->SetOwnForegroundColour(wxColour(220, 220, 220));
 	openSaved->Disable();
 
 	breakpointMenu = new BreakpointMenu(procHandle);
 
-	openBreakpointer = new wxButton(this, OpenBreakpointMenuID, "Breakpoint Menu", wxPoint(0, 0), wxSize(110, 25));
+	openBreakpointer = new wxButton(this, OpenBreakpointMenuID, "Breakpoint Menu", wxPoint(0, 0), wxSize(100, 25));
 	openBreakpointer->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	openBreakpointer->SetOwnForegroundColour(wxColour(220, 220, 220));
 	openBreakpointer->Disable();
 
 	hexCalculator = new HexCalculator();
 
-	openHexCalculator = new wxButton(this, OpenHexCalcID, "Hex Calculator", wxPoint(0, 0), wxSize(110, 25));
+	openHexCalculator = new wxButton(this, OpenHexCalcID, "Hex Calculator", wxPoint(0, 0), wxSize(90, 25));
 	openHexCalculator->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	openHexCalculator->SetOwnForegroundColour(wxColour(220, 220, 220));
 

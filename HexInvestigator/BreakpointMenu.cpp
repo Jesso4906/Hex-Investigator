@@ -70,7 +70,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetDefaultCellBackgroundColour(wxColour(60, 60, 60));
 	addrList->SetDefaultCellTextColour(wxColour(220, 220, 220));
 
-	addrList->CreateGrid(0, 2);
+	addrList->CreateGrid(0, 3);
 	addrList->EnableGridLines(false);
 	addrList->SetSelectionMode(wxGrid::wxGridSelectionModes::wxGridSelectRows);
 	addrList->SetScrollRate(0, 10);
@@ -79,10 +79,12 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->DisableDragColSize();
 	addrList->EnableEditing(false);
 	addrList->SetColLabelValue(0, "Address");
-	addrList->SetColLabelValue(1, "Hits");
+	addrList->SetColLabelValue(1, "Module");
+	addrList->SetColLabelValue(2, "Hits");
 	addrList->HideRowLabels();
-	addrList->SetColSize(0, 250);
-	addrList->SetColSize(1, 9999);
+	addrList->SetColSize(0, 100);
+	addrList->SetColSize(1, 200);
+	addrList->SetColSize(2, 9999);
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
 	infoAboutAddresses = new wxStaticText(this, wxID_ANY, "*Addresses here correspond to the instruction after the hit instruction");
@@ -449,10 +451,34 @@ void BreakpointMenu::AddAddressToList(uintptr_t address)
 
 	ListEntry entry;
 	entry.address = address;
+
+	entry.moduleName = "unknown";
+	HANDLE modSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetProcessId(procHandle));
+	if (modSnap != INVALID_HANDLE_VALUE)
+	{
+		MODULEENTRY32 modEntry;
+		modEntry.dwSize = sizeof(modEntry);
+
+		if (Module32First(modSnap, &modEntry))
+		{
+			do
+			{
+				if (address >= (uintptr_t)modEntry.modBaseAddr && address <= (((uintptr_t)modEntry.modBaseAddr) + modEntry.modBaseSize)) 
+				{
+					entry.moduleName = wxString(modEntry.szModule);
+					break;
+				}
+
+			} while (Module32Next(modSnap, &modEntry));
+		}
+	}
+	CloseHandle(modSnap);
+
 	entry.hits = 1;
+
 	entries.push_back(entry);
 
-	addrList->AppendRows();
+	addrList->AppendRows(1);
 }
 
 void BreakpointMenu::UpdateList(wxTimerEvent& e) // if AddAddressToList called SetCellValue instead it will crash the program if it is called to often
@@ -463,7 +489,9 @@ void BreakpointMenu::UpdateList(wxTimerEvent& e) // if AddAddressToList called S
 		addressToHex << std::hex << entries[i].address;
 		addrList->SetCellValue(i, 0, addressToHex.str());
 
-		addrList->SetCellValue(i, 1, std::to_string(entries[i].hits));
+		addrList->SetCellValue(i, 1, entries[i].moduleName);
+
+		addrList->SetCellValue(i, 2, std::to_string(entries[i].hits));
 	}
 }
 

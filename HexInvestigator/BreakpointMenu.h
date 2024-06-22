@@ -74,8 +74,9 @@ public:
 
 	struct ListEntry 
 	{
-		uintptr_t address = 0;
-		unsigned int hits = 0;
+		uintptr_t address;
+		wxString moduleName;
+		unsigned int hits;
 	};
 	std::vector<ListEntry> entries;
 

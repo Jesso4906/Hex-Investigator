@@ -1,13 +1,5 @@
 #include "Utils.h"
 
-void Utils::WriteValue(HANDLE procHandle, uintptr_t* address, void* newValue, int size)
-{
-	DWORD oldProtect;
-	VirtualProtectEx(procHandle, address, size, PAGE_EXECUTE_READWRITE, &oldProtect);
-	WriteProcessMemory(procHandle, address, newValue, size, nullptr);
-	VirtualProtectEx(procHandle, address, size, oldProtect, &oldProtect);
-}
-
 void Utils::CopyToClipboard(const char* txt)
 {
 	if (wxTheClipboard->Open())

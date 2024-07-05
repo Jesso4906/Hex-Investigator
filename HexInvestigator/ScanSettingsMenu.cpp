@@ -16,73 +16,73 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 {
 	procHandle = hProc;
 	
-	this->SetOwnBackgroundColour(wxColour(35, 35, 35));
+	this->SetOwnBackgroundColour(backgroundColor);
 
 	protectionLabel = new wxStaticText(this, wxID_ANY, "Only scan regions with this protection:");
-	protectionLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+	protectionLabel->SetOwnForegroundColour(textColor);
 
 	protectChoice = new wxCheckListBox(this, ProtectionsListID, wxPoint(0,0), wxSize(200, 110), wxArrayString(6, protectStrs));
-	protectChoice->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	protectChoice->SetOwnBackgroundColour(foregroundColor);
 	for (int i = 0; i < 6; i++)
 	{
-		protectChoice->GetItem(i)->SetBackgroundColour(wxColour(60, 60, 60));
-		protectChoice->GetItem(i)->SetTextColour(wxColour(220, 220, 220));
+		protectChoice->GetItem(i)->SetBackgroundColour(foregroundColor);
+		protectChoice->GetItem(i)->SetTextColour(textColor);
 	}
 	protectChoice->Check(5);
 
 	typeLabel = new wxStaticText(this, wxID_ANY, "Only scan regions of these types:");
-	typeLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+	typeLabel->SetOwnForegroundColour(textColor);
 
 	typeChoice = new wxCheckListBox(this, MemoryTypeListID, wxPoint(0, 0), wxSize(200, 60), wxArrayString(3, typeStrs));
 	typeChoice->Check(0);
 	typeChoice->Check(2);
-	typeChoice->SetOwnBackgroundColour(wxColour(60, 60, 60));
+	typeChoice->SetOwnBackgroundColour(foregroundColor);
 	for (int i = 0; i < 3; i++)
 	{
-		typeChoice->GetItem(i)->SetBackgroundColour(wxColour(60, 60, 60));
-		typeChoice->GetItem(i)->SetTextColour(wxColour(220, 220, 220));
+		typeChoice->GetItem(i)->SetBackgroundColour(foregroundColor);
+		typeChoice->GetItem(i)->SetTextColour(textColor);
 	}
 
 	alignMemory = new wxCheckBox(this, wxID_ANY, "Align scan with value type size");
 	alignMemory->SetValue(true);
-	alignMemory->SetOwnForegroundColour(wxColour(220, 220, 220));
+	alignMemory->SetOwnForegroundColour(textColor);
 
 	freezeProcess = new wxCheckBox(this, wxID_ANY, "Freeze process during scan");
 	freezeProcess->SetValue(false);
-	freezeProcess->SetOwnForegroundColour(wxColour(220, 220, 220));
+	freezeProcess->SetOwnForegroundColour(textColor);
 
 	scanKeybindLabel = new wxStaticText(this, wxID_ANY, "First/next scan keybind:");
-	scanKeybindLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+	scanKeybindLabel->SetOwnForegroundColour(textColor);
 
 	scanKeybindSelect = new wxChoice(this, SelectKeybindID, wxPoint(0, 0), wxSize(150, 25), wxArrayString(62, keyStrs));
 	scanKeybindSelect->SetSelection(0);
-	scanKeybindSelect->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	scanKeybindSelect->SetOwnForegroundColour(wxColour(220, 220, 220));
+	scanKeybindSelect->SetOwnBackgroundColour(foregroundColor);
+	scanKeybindSelect->SetOwnForegroundColour(textColor);
 
 	minAddrTxt = new wxStaticText(this, wxID_ANY, "Min address:");
-	minAddrTxt->SetOwnForegroundColour(wxColour(220, 220, 220));
+	minAddrTxt->SetOwnForegroundColour(textColor);
 
 	minAddrInput = new wxTextCtrl(this, MinAddressInputID, "0", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
-	minAddrInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	minAddrInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	minAddrInput->SetOwnBackgroundColour(foregroundColor);
+	minAddrInput->SetOwnForegroundColour(textColor);
 
 	maxAddrTxt = new wxStaticText(this, wxID_ANY, "Max address:");
-	maxAddrTxt->SetOwnForegroundColour(wxColour(220, 220, 220));
+	maxAddrTxt->SetOwnForegroundColour(textColor);
 
 	maxAddrInput = new wxTextCtrl(this, MaxAddressInputID, "7fffffffffff", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
-	maxAddrInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	maxAddrInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	maxAddrInput->SetOwnBackgroundColour(foregroundColor);
+	maxAddrInput->SetOwnForegroundColour(textColor);
 
 	moduleSelectTxt = new wxStaticText(this, wxID_ANY, "Select Module:");
-	moduleSelectTxt->SetOwnForegroundColour(wxColour(220, 220, 220));
+	moduleSelectTxt->SetOwnForegroundColour(textColor);
 
 	moduleSelect = new wxChoice(this, SelectModuleID, wxPoint(0, 0), wxSize(200, 25));
-	moduleSelect->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	moduleSelect->SetOwnForegroundColour(wxColour(220, 220, 220));
+	moduleSelect->SetOwnBackgroundColour(foregroundColor);
+	moduleSelect->SetOwnForegroundColour(textColor);
 
 	displayModuleInfo = new wxCheckBox(this, wxID_ANY, "Display Module Info");
 	displayModuleInfo->SetValue(true);
-	displayModuleInfo->SetOwnForegroundColour(wxColour(220, 220, 220));
+	displayModuleInfo->SetOwnForegroundColour(textColor);
 
 	column1Sizer = new wxBoxSizer(wxVERTICAL);
 	column2Sizer = new wxBoxSizer(wxVERTICAL);
@@ -197,13 +197,35 @@ void ScanSettingsMenu::UpdateModuleAddresses()
 		{
 			do
 			{
-				moduleSelect->Append(wxString(modEntry.szModule));
-
 				ModuleBounds moduleBounds = {};
 				moduleBounds.start = (uintptr_t)modEntry.modBaseAddr;
 				moduleBounds.end = moduleBounds.start + (uintptr_t)modEntry.modBaseSize;
-
-				moduleAddresses.push_back(moduleBounds);
+				
+				int count = moduleSelect->GetCount();
+				if (count == 1)
+				{
+					moduleSelect->Append(wxString(modEntry.szModule));
+					moduleAddresses.push_back(moduleBounds);
+				}
+				else 
+				{
+					for (int i = 1; i < count; i++) 
+					{
+						wxString str1 = moduleSelect->GetString(i).Lower();
+						wxString str2 = wxString(modEntry.szModule);
+						if (str1.compare(str2.Lower()) >= 0)
+						{
+							moduleSelect->Insert(str2, i);
+							moduleAddresses.insert(moduleAddresses.begin() + (i - 1), moduleBounds);
+							break;
+						}
+						else if (i == count - 1) 
+						{ 
+							moduleSelect->Append(wxString(modEntry.szModule));
+							moduleAddresses.push_back(moduleBounds);
+						}
+					}
+				}
 
 			} while (Module32Next(modSnap, &modEntry));
 		}

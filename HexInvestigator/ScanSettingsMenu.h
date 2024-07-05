@@ -2,8 +2,9 @@
 #include <wx/wx.h>
 #include <sstream>
 #include "TLHelp32.h"
+#include "Utils.h"
 
-class ScanSettingsMenu : public wxFrame
+class ScanSettingsMenu : public wxFrame, public Utils
 {
 public:
 	ScanSettingsMenu(HANDLE hProc);

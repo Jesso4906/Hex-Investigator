@@ -14,61 +14,61 @@ wxEND_EVENT_TABLE()
 
 BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "Breakpoint Menu", wxPoint(50, 50), wxSize(400, 400))
 {
-	this->SetOwnBackgroundColour(wxColour(35, 35, 35));
+	this->SetOwnBackgroundColour(backgroundColor);
 
 	procHandle = procH;
 
 	addressInput = new wxTextCtrl(this, wxID_ANY, "0", wxPoint(0, 0), wxSize(310, 25));
-	addressInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	addressInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	addressInput->SetOwnBackgroundColour(foregroundColor);
+	addressInput->SetOwnForegroundColour(textColor);
 	addressInput->SetToolTip("Address to set a breakpoint on");
 	addressInput->Disable();
 
 	selectSize = new wxChoice(this, wxID_ANY, wxPoint(0, 0), wxSize(40, 25), wxArrayString(4, sizeStrs));
 	selectSize->SetSelection(0);
-	selectSize->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	selectSize->SetOwnForegroundColour(wxColour(220, 220, 220));
+	selectSize->SetOwnBackgroundColour(foregroundColor);
+	selectSize->SetOwnForegroundColour(textColor);
 	selectSize->SetToolTip("Size of breakpoint");
 	selectSize->Disable();
 
 	attachDebugger = new wxButton(this, AttachDebuggerID, "Attach Debugger", wxPoint(0, 0), wxSize(100, 25));
-	attachDebugger->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	attachDebugger->SetOwnForegroundColour(wxColour(220, 220, 220));
+	attachDebugger->SetOwnBackgroundColour(foregroundColor);
+	attachDebugger->SetOwnForegroundColour(textColor);
 
 	detachDebugger = new wxButton(this, DetachDebuggerID, "Detach Debugger", wxPoint(0, 0), wxSize(100, 25));
-	detachDebugger->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	detachDebugger->SetOwnForegroundColour(wxColour(220, 220, 220));
+	detachDebugger->SetOwnBackgroundColour(foregroundColor);
+	detachDebugger->SetOwnForegroundColour(textColor);
 	detachDebugger->Disable();
 
 	removeHBP = new wxButton(this, RemoveHBPID, "Remove HBP", wxPoint(0, 0), wxSize(100, 25));
-	removeHBP->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	removeHBP->SetOwnForegroundColour(wxColour(220, 220, 220));
+	removeHBP->SetOwnBackgroundColour(foregroundColor);
+	removeHBP->SetOwnForegroundColour(textColor);
 	removeHBP->SetToolTip("Remove hardware breakpoint");
 	removeHBP->Disable();
 
 	shbpWrite = new wxButton(this, SHBPWriteID, "Set HBP Write", wxPoint(0, 0), wxSize(100, 25));
-	shbpWrite->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	shbpWrite->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpWrite->SetOwnBackgroundColour(foregroundColor);
+	shbpWrite->SetOwnForegroundColour(textColor);
 	shbpWrite->SetToolTip("Set hardware breakpoint write");
 	shbpWrite->Disable();
 
 	shbpReadWrite = new wxButton(this, SHBPReadWriteID, "Set HBP Read Write", wxPoint(0, 0), wxSize(120, 25));
-	shbpReadWrite->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	shbpReadWrite->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpReadWrite->SetOwnBackgroundColour(foregroundColor);
+	shbpReadWrite->SetOwnForegroundColour(textColor);
 	shbpReadWrite->SetToolTip("Set hardware breakpoint read write");
 	shbpReadWrite->Disable();
 
 	shbpExecute = new wxButton(this, SHBPExecuteID, "Set HBP Execute", wxPoint(0, 0), wxSize(100, 25));
-	shbpExecute->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	shbpExecute->SetOwnForegroundColour(wxColour(220, 220, 220));
+	shbpExecute->SetOwnBackgroundColour(foregroundColor);
+	shbpExecute->SetOwnForegroundColour(textColor);
 	shbpExecute->SetToolTip("Set hardware breakpoint exectue");
 	shbpExecute->Disable();
 
 	addrList = new wxGrid(this, AddressListID, wxPoint(0, 0), wxSize(9999, 9999));
-	addrList->SetLabelBackgroundColour(wxColour(40, 40, 40));
-	addrList->SetLabelTextColour(wxColour(230, 230, 230));
-	addrList->SetDefaultCellBackgroundColour(wxColour(60, 60, 60));
-	addrList->SetDefaultCellTextColour(wxColour(220, 220, 220));
+	addrList->SetLabelBackgroundColour(backgroundColor);
+	addrList->SetLabelTextColour(textColor);
+	addrList->SetDefaultCellBackgroundColour(foregroundColor);
+	addrList->SetDefaultCellTextColour(textColor);
 
 	addrList->CreateGrid(0, 3);
 	addrList->EnableGridLines(false);
@@ -88,7 +88,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
 	infoAboutAddresses = new wxStaticText(this, wxID_ANY, "*Addresses here correspond to the instruction after the hit instruction");
-	infoAboutAddresses->SetOwnForegroundColour(wxColour(220, 220, 220));
+	infoAboutAddresses->SetOwnForegroundColour(textColor);
 
 	row1Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row2Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -510,8 +510,8 @@ void BreakpointMenu::RightClickOptions(wxGridEvent& e)
 	int row = e.GetRow();
 
 	wxMenuItem* cpyAddr = menu.Append(202, "Copy Address");
-	cpyAddr->SetBackgroundColour(wxColour(60, 60, 60));
-	cpyAddr->SetTextColour(wxColour(220, 220, 220));
+	cpyAddr->SetBackgroundColour(foregroundColor);
+	cpyAddr->SetTextColour(textColor);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 0)); }, 202);
 
 	wxPoint pos = e.GetPosition();
@@ -521,8 +521,11 @@ void BreakpointMenu::RightClickOptions(wxGridEvent& e)
 
 void BreakpointMenu::OpenMenu(wxPoint position) 
 {
+	position.x += 10;
+	position.y += 10;
 	SetPosition(position);
 	Show();
+	Raise();
 }
 
 void BreakpointMenu::CloseMenu(wxCloseEvent& e) // stops this frame from being destroyed and the data being lost

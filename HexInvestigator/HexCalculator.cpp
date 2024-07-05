@@ -9,11 +9,11 @@ EVT_BUTTON(CopyHexResultID, CopyHexResult)
 EVT_BUTTON(CopyDecResultID, CopyDecResult)
 wxEND_EVENT_TABLE()
 
-HexCalculator::HexCalculator() : wxFrame(nullptr, MainWindowID, "Hex Calculator", wxPoint(50, 50), wxSize(280, 150))
+HexCalculator::HexCalculator() : wxFrame(nullptr, MainWindowID, "Hex Calculator", wxPoint(50, 50), wxSize(380, 150))
 {
 	this->SetOwnBackgroundColour(wxColour(35, 35, 35));
 
-	firstValueInput = new wxTextCtrl(this, FirstValueInputID, "C", wxPoint(0, 0), wxSize(100, 25));
+	firstValueInput = new wxTextCtrl(this, FirstValueInputID, "C", wxPoint(0, 0), wxSize(150, 25));
 	firstValueInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	firstValueInput->SetOwnForegroundColour(wxColour(220, 220, 220));
 
@@ -22,7 +22,7 @@ HexCalculator::HexCalculator() : wxFrame(nullptr, MainWindowID, "Hex Calculator"
 	selectOperation->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	selectOperation->SetOwnForegroundColour(wxColour(220, 220, 220));
 
-	secondValueInput = new wxTextCtrl(this, SecondValueInputID, "4", wxPoint(0, 0), wxSize(100, 25));
+	secondValueInput = new wxTextCtrl(this, SecondValueInputID, "4", wxPoint(0, 0), wxSize(150, 25));
 	secondValueInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
 	secondValueInput->SetOwnForegroundColour(wxColour(220, 220, 220));
 
@@ -123,8 +123,11 @@ void HexCalculator::CopyDecResult(wxCommandEvent& e)
 
 void HexCalculator::OpenMenu(wxPoint position)
 {
+	position.x += 10;
+	position.y += 10;
 	SetPosition(position);
 	Show();
+	Raise();
 }
 
 void HexCalculator::CloseMenu(wxCloseEvent& e) // stops this frame from being destroyed and the data being lost

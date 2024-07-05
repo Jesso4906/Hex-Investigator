@@ -3,17 +3,20 @@
 #include <sstream>
 #include <wx/numdlg.h> 
 #include <wx/grid.h>
+#include "WriteMenu.h"
 
 class SavedMenu : public wxFrame, public Utils
 {
 public:
-	SavedMenu(HANDLE);
+	SavedMenu(HANDLE, WriteMenu*);
 
 	wxButton* addAddress = nullptr;
 	wxGrid* addrList = nullptr;
 	wxBoxSizer* vSizer = nullptr;
 
 	wxTimer* updateTimer = nullptr;
+
+	WriteMenu* writeMenu = nullptr;
 
 	enum ids
 	{
@@ -25,18 +28,24 @@ public:
 
 	HANDLE procHandle;
 
-	std::vector<uintptr_t> addresses;
-	std::vector<char> types;
-	std::vector<char> bases;
-	std::vector<int> sizes; // for byte arrays
+	struct SavedEntry
+	{
+		uintptr_t address;
+		ValueType type;
+		char base;
 
-	void AddAddress(uintptr_t address, char type, char base, int size);
+		int byteArraySize;
+	};
+
+	std::vector<SavedEntry> savedEntries;
+
+	void AddAddress(SavedEntry savedEntry);
 
 	void UpdateListOnTimer(wxTimerEvent& e);
 	template <typename T> void UpdateRow(int row, bool isFloat);
 	void UpdateRowByteArray(int row, int size, bool ascii);
 
-	void WriteValueHandler(wxString input, uintptr_t* address, char type, char base);
+	void WriteValueHandler(wxString input, uintptr_t* address, ValueType type, char base);
 
 	void RemoveRow(int row);
 

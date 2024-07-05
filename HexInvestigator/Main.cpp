@@ -14,88 +14,118 @@ EVT_BUTTON(ScanSettingsID, OpenScanSettings)
 EVT_CHECKBOX(ManualUpdateToggleID, ToggleManualUpdate)
 EVT_BUTTON(ManualUpdateButtonID, ManuallyUpdate)
 EVT_CHECKBOX(RoundFloatsID, UpdateRoundFloats)
-EVT_BUTTON(OpenSavedListID, OpenSavedMenu)
-EVT_BUTTON(OpenBreakpointMenuID, OpenBreakpointMenu)
-EVT_BUTTON(OpenHexCalcID, OpenHexCalculator)
 wxEND_EVENT_TABLE()
 
 Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50, 50), wxSize(550, 650))
 {
-	SetOwnBackgroundColour(wxColour(35, 35, 35));
+	SetOwnBackgroundColour(backgroundColor);
+
+	writeMenu = new WriteMenu(procHandle);
+	savedMenu = new SavedMenu(procHandle, writeMenu);
+	breakpointMenu = new BreakpointMenu(procHandle);
+	hexCalculator = new HexCalculator();
+
+	menuBar = new wxMenuBar();
+
+	wxMenu* toolMenu = new wxMenu();
+
+	wxMenuItem* openWriteMenu = new wxMenuItem(0, OpenWriteMenuID, "Write Menu");
+	openWriteMenu->SetBackgroundColour(foregroundColor);
+	openWriteMenu->SetTextColour(textColor);
+	toolMenu->Append(openWriteMenu);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { writeMenu->OpenMenu(GetPosition()); }, OpenWriteMenuID);
+
+	wxMenuItem* openSavedAddresses = toolMenu->Append(OpenSavedListID, "Saved Addresses");
+	openSavedAddresses->SetBackgroundColour(foregroundColor);
+	openSavedAddresses->SetTextColour(textColor);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { savedMenu->OpenMenu(GetPosition()); }, OpenSavedListID);
+
+	wxMenuItem* openBreakpointMenu = toolMenu->Append(OpenBreakpointMenuID, "Breakpoint Menu");
+	openBreakpointMenu->SetBackgroundColour(foregroundColor);
+	openBreakpointMenu->SetTextColour(textColor);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { breakpointMenu->OpenMenu(GetPosition()); }, OpenBreakpointMenuID);
+
+	wxMenuItem* openHexCalculator = toolMenu->Append(OpenHexCalcID, "Hex Calculator");
+	openHexCalculator->SetBackgroundColour(foregroundColor);
+	openHexCalculator->SetTextColour(textColor);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { hexCalculator->OpenMenu(GetPosition()); }, OpenHexCalcID);
+
+	menuBar->Append(toolMenu, "Tools");
+	this->SetMenuBar(menuBar);
 
 	selectProc = new wxButton(this, SelectProcessID, "P", wxPoint(0, 0), wxSize(25, 25));
-	selectProc->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	selectProc->SetOwnForegroundColour(wxColour(220, 220, 220));
+	selectProc->SetOwnBackgroundColour(foregroundColor);
+	selectProc->SetOwnForegroundColour(textColor);
 
 	selectProcMenu = new SelectProcessMenu(this);
 
 	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(12, typeStrs));
 	selectValueType->SetSelection(1);
-	selectValueType->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	selectValueType->SetOwnForegroundColour(wxColour(220, 220, 220));
+	selectValueType->SetOwnBackgroundColour(foregroundColor);
+	selectValueType->SetOwnForegroundColour(textColor);
 
 	selectScanType = new wxChoice(this, SelectScanTypeID, wxPoint(0, 0), wxSize(120, 50), wxArrayString(7, firstScans));
 	selectScanType->SetSelection(0);
-	selectScanType->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	selectScanType->SetOwnForegroundColour(wxColour(220, 220, 220));
+	selectScanType->SetOwnBackgroundColour(foregroundColor);
+	selectScanType->SetOwnForegroundColour(textColor);
 
 	baseInputLabel = new wxStaticText(this, wxID_ANY, "Base:");
-	baseInputLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+	baseInputLabel->SetOwnForegroundColour(textColor);
 
 	baseInput = new wxTextCtrl(this, wxID_ANY, "10", wxPoint(0, 0), wxSize(20, 20), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_NUMERIC));
-	baseInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	baseInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	baseInput->SetOwnBackgroundColour(foregroundColor);
+	baseInput->SetOwnForegroundColour(textColor);
 
 	roundFloats = new wxCheckBox(this, RoundFloatsID, "Round to Place:");
-	roundFloats->SetOwnForegroundColour(wxColour(220, 220, 220));
+	roundFloats->SetOwnForegroundColour(textColor);
 	roundFloats->Disable();
 
 	roundInput = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(20, 20), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_NUMERIC));
-	roundInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	roundInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	roundInput->SetOwnBackgroundColour(foregroundColor);
+	roundInput->SetOwnForegroundColour(textColor);
 	roundInput->SetEditable(false);
 
 	threadsInputLabel = new wxStaticText(this, wxID_ANY, "Threads:");
-	threadsInputLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+	threadsInputLabel->SetOwnForegroundColour(textColor);
 
 	threadsInput = new wxTextCtrl(this, wxID_ANY, "1", wxPoint(0, 0), wxSize(30, 20), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_NUMERIC));
-	threadsInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	threadsInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	threadsInput->SetOwnBackgroundColour(foregroundColor);
+	threadsInput->SetOwnForegroundColour(textColor);
 
 	firstScan = new wxButton(this, FirstScanID, "First Scan", wxPoint(0, 0), wxSize(75, 25));
-	firstScan->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	firstScan->SetOwnForegroundColour(wxColour(220, 220, 220));
+	firstScan->SetOwnBackgroundColour(foregroundColor);
+	firstScan->SetOwnForegroundColour(textColor);
 	firstScan->Disable();
 
 	nextScan = new wxButton(this, NextScanID, "Next Scan", wxPoint(0, 0), wxSize(75, 25));
-	nextScan->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	nextScan->SetOwnForegroundColour(wxColour(220, 220, 220));
+	nextScan->SetOwnBackgroundColour(foregroundColor);
+	nextScan->SetOwnForegroundColour(textColor);
 	nextScan->Disable();
 
 	scanSettingsMenu = new ScanSettingsMenu(procHandle);
 
 	scanSettingsButton = new wxButton(this, ScanSettingsID, "Scan Settings", wxPoint(0, 0), wxSize(100, 25));
-	scanSettingsButton->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	scanSettingsButton->SetOwnForegroundColour(wxColour(220, 220, 220));
+	scanSettingsButton->SetOwnBackgroundColour(foregroundColor);
+	scanSettingsButton->SetOwnForegroundColour(textColor);
 	scanSettingsButton->Disable();
 
 	valueInput = new wxTextCtrl(this, wxID_ANY, "0", wxPoint(0, 0), wxSize(9999, 25));
-	valueInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	valueInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	valueInput->SetOwnBackgroundColour(foregroundColor);
+	valueInput->SetOwnForegroundColour(textColor);
 
 	manualUpdate = new wxCheckBox(this, ManualUpdateToggleID, "Manually Update List");
-	manualUpdate->SetOwnForegroundColour(wxColour(220, 220, 220));
+	manualUpdate->SetOwnForegroundColour(textColor);
 
 	manualUpdateButton = new wxButton(this, ManualUpdateButtonID, "Update", wxPoint(0, 0), wxSize(75, 25));
-	manualUpdateButton->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	manualUpdateButton->SetOwnForegroundColour(wxColour(220, 220, 220));
+	manualUpdateButton->SetOwnBackgroundColour(foregroundColor);
+	manualUpdateButton->SetOwnForegroundColour(textColor);
 	manualUpdateButton->Disable();
 
 	addrList = new wxGrid(this, AddressListID, wxPoint(0, 0), wxSize(9999, 9999));
-	addrList->SetLabelBackgroundColour(wxColour(40, 40, 40));
-	addrList->SetLabelTextColour(wxColour(230, 230, 230));
-	addrList->SetDefaultCellBackgroundColour(wxColour(60, 60, 60));
-	addrList->SetDefaultCellTextColour(wxColour(220, 220, 220));
+	addrList->SetLabelBackgroundColour(backgroundColor);
+	addrList->SetLabelTextColour(textColor);
+	addrList->SetDefaultCellBackgroundColour(foregroundColor);
+	addrList->SetDefaultCellTextColour(textColor);
 
 	addrList->CreateGrid(0, 3);
 	addrList->EnableGridLines(false);
@@ -114,27 +144,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
 	resultsTxt = new wxStaticText(this, wxID_ANY, "Results:");
-	resultsTxt->SetOwnForegroundColour(wxColour(220, 220, 220));
-
-	savedMenu = new SavedMenu(procHandle);
-
-	openSaved = new wxButton(this, OpenSavedListID, "Saved Addresses", wxPoint(0, 0), wxSize(100, 25));
-	openSaved->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	openSaved->SetOwnForegroundColour(wxColour(220, 220, 220));
-	openSaved->Disable();
-
-	breakpointMenu = new BreakpointMenu(procHandle);
-
-	openBreakpointer = new wxButton(this, OpenBreakpointMenuID, "Breakpoint Menu", wxPoint(0, 0), wxSize(100, 25));
-	openBreakpointer->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	openBreakpointer->SetOwnForegroundColour(wxColour(220, 220, 220));
-	openBreakpointer->Disable();
-
-	hexCalculator = new HexCalculator();
-
-	openHexCalculator = new wxButton(this, OpenHexCalcID, "Hex Calculator", wxPoint(0, 0), wxSize(90, 25));
-	openHexCalculator->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	openHexCalculator->SetOwnForegroundColour(wxColour(220, 220, 220));
+	resultsTxt->SetOwnForegroundColour(textColor);
 
 	row1Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row2Sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -158,10 +168,6 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	row2Sizer->Add(threadsInput, 0, wxRIGHT, 10);
 
 	row3Sizer->Add(resultsTxt, 0, wxLEFT, 10);
-	row3Sizer->AddStretchSpacer(1);
-	row3Sizer->Add(openHexCalculator, 0, wxRIGHT, 10);
-	row3Sizer->Add(openBreakpointer, 0, wxRIGHT, 10);
-	row3Sizer->Add(openSaved, 0, wxRIGHT, 10);
 	
 	vSizer->Add(row1Sizer, 0, wxEXPAND);
 	vSizer->Add(row2Sizer, 0, wxEXPAND);
@@ -597,13 +603,16 @@ template <typename T> void Main::UpdateList(bool isFloat)
 			switch (info.secitonType)
 			{
 			case info.SectionType::Code:
-				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				addrList->SetCellTextColour(i, 0, wxColour(255, 30, 30));
 				break;
 			case info.SectionType::InitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				addrList->SetCellTextColour(i, 0, wxColour(30, 255, 30));
 				break;
 			case info.SectionType::UninitData:
 				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
+			case info.SectionType::Other:
+				addrList->SetCellTextColour(i, 0, wxColour(220, 120, 255));
 				break;
 			}
 		}
@@ -612,7 +621,7 @@ template <typename T> void Main::UpdateList(bool isFloat)
 			addressToHex << std::hex << addressPool[i];
 
 			addrList->SetCellValue(i, 0, addressToHex.str());
-			addrList->SetCellTextColour(i, 0, wxColour(220, 220, 220));
+			addrList->SetCellTextColour(i, 0, textColor);
 		}
 	}
 }
@@ -669,13 +678,16 @@ void Main::UpdateListByteArray(int size, bool ascii)
 			switch (info.secitonType)
 			{
 			case info.SectionType::Code:
-				addrList->SetCellTextColour(i, 0, wxColour(255, 0, 0));
+				addrList->SetCellTextColour(i, 0, wxColour(255, 30, 30));
 				break;
 			case info.SectionType::InitData:
-				addrList->SetCellTextColour(i, 0, wxColour(0, 255, 0));
+				addrList->SetCellTextColour(i, 0, wxColour(30, 255, 30));
 				break;
 			case info.SectionType::UninitData:
 				addrList->SetCellTextColour(i, 0, wxColour(0, 150, 255));
+				break;
+			case info.SectionType::Other:
+				addrList->SetCellTextColour(i, 0, wxColour(220, 120, 255));
 				break;
 			}
 		}
@@ -684,7 +696,7 @@ void Main::UpdateListByteArray(int size, bool ascii)
 			addressToHex << std::hex << addressPool[i];
 
 			addrList->SetCellValue(i, 0, addressToHex.str());
-			addrList->SetCellTextColour(i, 0, wxColour(220, 220, 220));
+			addrList->SetCellTextColour(i, 0, textColor);
 		}
 	}
 }
@@ -752,6 +764,7 @@ Main::AddressModuleInfo Main::GetAddressModuleInfo(uintptr_t address)
 				if (section.Characteristics & IMAGE_SCN_CNT_CODE) { info.secitonType = info.SectionType::Code; }
 				else if (section.Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) { info.secitonType = info.SectionType::InitData; }
 				else if (section.Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) { info.secitonType = info.SectionType::UninitData; }
+				else { info.secitonType = info.SectionType::Other; }
 
 				info.sectionName = wxString(section.Name);
 				info.moduleName = moduleNames[i];
@@ -841,20 +854,21 @@ void Main::OpenSelectProcessMenu(wxCommandEvent& e)
 	selectProcMenu->OpenMenu(GetPosition());
 }
 
-void Main::UpdateProcessSelection(DWORD procId) 
+void Main::UpdateProcessSelection(HANDLE newProcHandle, wxString procName) 
 {
 	ResetScan();
 
-	procHandle = OpenProcess(PROCESS_ALL_ACCESS, NULL, procId);
+	procHandle = newProcHandle;
 
 	savedMenu->procHandle = procHandle;
 	breakpointMenu->procHandle = procHandle;
 	scanSettingsMenu->procHandle = procHandle;
+	writeMenu->procHandle = procHandle;
 
 	firstScan->Enable();
 	scanSettingsButton->Enable();
-	openSaved->Enable();
-	openBreakpointer->Enable();
+
+	this->SetTitle("Hex Investigator x64 - [attached to " + procName + "]");
 }
 
 void Main::FirstScanButtonPress(wxCommandEvent& e)
@@ -881,7 +895,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	unsigned int results = 0;
 
-	int valueType = selectValueType->GetSelection();
+	ValueType valueType = (ValueType)selectValueType->GetSelection();
 
 	std::vector<std::thread> scanThreads(threads);
 
@@ -894,7 +908,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 		switch (valueType)
 		{
-		case 0:
+		case Int64:
 		{
 			if (performedAllScan)
 			{
@@ -912,7 +926,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 1:
+		case Int32:
 		{
 			if (performedAllScan)
 			{
@@ -930,7 +944,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 2:
+		case Int16:
 		{
 			if (performedAllScan)
 			{
@@ -948,7 +962,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, (short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 3:
+		case Int8:
 		{
 			if (performedAllScan)
 			{
@@ -966,7 +980,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, (char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 4:
+		case UInt64:
 		{
 			if (performedAllScan)
 			{
@@ -984,7 +998,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 5:
+		case UInt32:
 		{
 			if (performedAllScan)
 			{
@@ -1002,7 +1016,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 6:
+		case UInt16:
 		{
 			if (performedAllScan)
 			{
@@ -1020,7 +1034,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, (unsigned short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 7:
+		case UInt8:
 		{
 			if (performedAllScan)
 			{
@@ -1038,7 +1052,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, (unsigned char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 8:
+		case Float:
 		{
 			if (performedAllScan)
 			{
@@ -1056,7 +1070,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, (float)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 9:
+		case Double:
 		{
 			if (performedAllScan)
 			{
@@ -1074,7 +1088,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 10:
+		case Bytes:
 		{
 			unsigned char* targetValue;
 			if (!ParseByteArray(valueInput->GetValue(), &targetValue)) { wxMessageBox("Invalid Value. Should be in format FB23EA...", "Can't Scan"); return; }
@@ -1084,7 +1098,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
-		case 11:
+		case ASCII:
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
@@ -1158,7 +1172,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	scanning = true;
 
-	if (valueType > 9) { return; } // dont change the scan options if the type is a byte array
+	if (valueType > Double) { return; } // dont change the scan options if the type is a byte array
 	selectScanType->Set(wxArrayString(12, nextScans));
 	selectScanType->SetSelection(0);
 	valueInput->Show();
@@ -1181,7 +1195,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	std::vector<std::vector<uintptr_t>> addressLists(threads);
 	std::vector<std::vector<unsigned char>> byteLists(threads);
 
-	int valueType = selectValueType->GetSelection();
+	ValueType valueType = (ValueType)selectValueType->GetSelection();
 
 	for (int i = 0; i < threads; i++) 
 	{
@@ -1192,7 +1206,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 		
 		switch (valueType)
 		{
-		case 0:
+		case Int64:
 		{
 			long long targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToLongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1210,7 +1224,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 1:
+		case Int32:
 		{
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1228,7 +1242,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 2:
+		case Int16:
 		{
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1246,7 +1260,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, (short)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 3:
+		case Int8:
 		{
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1264,7 +1278,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, (char)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 4:
+		case UInt64:
 		{
 			unsigned long long targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToULongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1282,7 +1296,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 5:
+		case UInt32:
 		{
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1300,7 +1314,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 6:
+		case UInt16:
 		{
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1318,7 +1332,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, (unsigned short)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 7:
+		case UInt8:
 		{
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1336,7 +1350,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, (unsigned char)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 8:
+		case Float:
 		{
 			double targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1354,7 +1368,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, (float)targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 9:
+		case Double:
 		{
 			double targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
@@ -1372,7 +1386,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
-		case 10:
+		case Bytes:
 		{
 			unsigned char* targetValue;
 			if (!ParseByteArray(valueInput->GetValue(), &targetValue)) { wxMessageBox("Invalid Value. Should be in format FB23EA...", "Can't Scan"); return; }
@@ -1382,7 +1396,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
-		case 11:
+		case ASCII:
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
@@ -1455,43 +1469,43 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 
 void Main::UpdateListOnTimer(wxTimerEvent& e) 
 {
-	int type = selectValueType->GetSelection();
+	ValueType type = (ValueType)selectValueType->GetSelection();
 	switch (type)
 	{
-	case 0:
+	case Int64:
 		UpdateList<long long>(false);
 		break;
-	case 1:
+	case Int32:
 		UpdateList<int>(false);
 		break;
-	case 2:
+	case Int16:
 		UpdateList<short>(false);
 		break;
-	case 3:
+	case Int8:
 		UpdateList<char>(false);
 		break;
-	case 4:
+	case UInt64:
 		UpdateList<unsigned long long>(false);
 		break;
-	case 5:
+	case UInt32:
 		UpdateList<unsigned int>(false);
 		break;
-	case 6:
+	case UInt16:
 		UpdateList<unsigned short>(false);
 		break;
-	case 7:
+	case UInt8:
 		UpdateList<unsigned char>(false);
 		break;
-	case 8:
+	case Float:
 		UpdateList<float>(true);
 		break;
-	case 9:
+	case Double:
 		UpdateList<double>(true);
 		break;
-	case 10:
+	case Bytes:
 		UpdateListByteArray(byteArraySize, false);
 		break;
-	case 11:
+	case ASCII:
 		UpdateListByteArray(byteArraySize, true);
 		break;
 	}
@@ -1505,79 +1519,87 @@ void Main::WriteValueHandler(wxString input, uintptr_t* address)
 	baseInput->GetValue().ToInt(&base);
 	if (base < 2 || base > 36) { base = 10; baseInput->SetValue("10"); }
 	
-	int type = selectValueType->GetSelection();
+	ValueType type = (ValueType)selectValueType->GetSelection();
 	switch (type)
 	{
-		case 0:
+		case Int64:
 		{
 			long long targetValue = 0;
 			if (!input.ToLongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 1:
+		case Int32:
 		{
 			int targetValue = 0;
 			if (!input.ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 2:
+		case Int16:
 		{
-			int targetValue = 0;
-			if (!input.ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			int temp = 0;
+			if (!input.ToInt(&temp, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			short targetValue = (short)temp;
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 3:
+		case Int8:
 		{
-			int targetValue = 0;
-			if (!input.ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			int temp = 0;
+			if (!input.ToInt(&temp, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			char targetValue = (char)temp;
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 4:
+		case UInt64:
 		{
 			unsigned long long targetValue = 0;
 			if (!input.ToULongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 5:
+		case UInt32:
 		{
 			unsigned int targetValue = 0;
 			if (!input.ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 6:
+		case UInt16:
 		{
-			unsigned int targetValue = 0;
-			if (!input.ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			unsigned int temp = 0;
+			if (!input.ToUInt(&temp, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			unsigned short targetValue = (unsigned short)temp;
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 7:
+		case UInt8:
 		{
-			unsigned int targetValue = 0;
-			if (!input.ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			unsigned int temp = 0;
+			if (!input.ToUInt(&temp, base)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
+
+			unsigned char targetValue = (unsigned char)temp;
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 8:
+		case Float:
 		{
 			double doubleVal = 0;
 			if (!input.ToDouble(&doubleVal)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
 
 			float targetValue = (float)doubleVal;
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
-		case 9:
+		case Double:
 		{
 			double targetValue = 0;
 			if (!input.ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Write"); return; }
-			WriteValue(procHandle, address, &targetValue, sizeof(targetValue));
+			WriteProcessMemory(procHandle, address, &targetValue, sizeof(targetValue), nullptr);
 			break;
 		}
 	}
@@ -1620,27 +1642,34 @@ void Main::RightClickOptions(wxGridEvent& e)
 	wxArrayInt selectedRows = addrList->GetSelectedRows(); // all rows also selected
 
 	wxMenuItem* save = new wxMenuItem(0, 100, "Save");
-	save->SetBackgroundColour(wxColour(60, 60, 60));
-	save->SetTextColour(wxColour(220, 220, 220));
+	save->SetBackgroundColour(foregroundColor);
+	save->SetTextColour(textColor);
 	menu.Append(save);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
 		{ 
 			if (!savedMenu->IsVisible()) { savedMenu->OpenMenu(GetPosition()); }
 
-			if (selectedRows.IsEmpty()) { savedMenu->AddAddress(addressPool[row], selectValueType->GetSelection(), base, byteArraySize); }
+			SavedMenu::SavedEntry savedEntry;
+			savedEntry.address = addressPool[row];
+			savedEntry.type = (ValueType)selectValueType->GetSelection();
+			savedEntry.base = base;
+			savedEntry.byteArraySize = byteArraySize;
+
+			if (selectedRows.IsEmpty()) { savedMenu->AddAddress(savedEntry); }
 
 			for (int i = 0; i < selectedRows.GetCount(); i++)
 			{
-				savedMenu->AddAddress(addressPool[selectedRows.Item(i)], selectValueType->GetSelection(), base, byteArraySize);
+				savedEntry.address = addressPool[selectedRows.Item(i)];
+				savedMenu->AddAddress(savedEntry);
 			}
 
 		}, 100);
 
-	if (selectValueType->GetSelection() < 10) // cant write if its a byte array
+	if (selectValueType->GetSelection() < Bytes) // cant write if its a byte array
 	{
 		wxMenuItem* write = menu.Append(101, "Write Value");
-		write->SetBackgroundColour(wxColour(60, 60, 60));
-		write->SetTextColour(wxColour(220, 220, 220));
+		write->SetBackgroundColour(foregroundColor);
+		write->SetTextColour(textColor);
 		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
 			{ 
 				wxString input = wxGetTextFromUser("New Value (using current base):", "Write Value");
@@ -1652,11 +1681,44 @@ void Main::RightClickOptions(wxGridEvent& e)
 					WriteValueHandler(input, (uintptr_t*)addressPool[selectedRows.Item(i)]);
 				}
 			}, 101);
+
+		wxMenuItem* setWriteOp = new wxMenuItem(0, 106, "Set Write Operation");
+		setWriteOp->SetBackgroundColour(foregroundColor);
+		setWriteOp->SetTextColour(textColor);
+		menu.Append(setWriteOp);
+		menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void
+			{
+				WriteMenu::WriteEntry writeEntry;
+				writeEntry.address = addressPool[row];
+				writeEntry.type = (ValueType)selectValueType->GetSelection();
+
+				writeEntry.operation = (WriteMenu::Operation)wxGetSingleChoiceIndex("Chose the operation to execute", "Operation", wxArrayString(5, writeMenu->operationStrs));
+				if (writeEntry.operation == -1) { return; }
+
+				wxString valueInput = wxGetTextFromUser("Enter the value to use in the operation", "Value", "1");
+				if (!valueInput.ToDouble(&writeEntry.value)) { return; }
+				writeEntry.valueStr = valueInput;
+
+				writeEntry.frequency = wxGetNumberFromUser("The operation will be executed once every this many miliseconds", "Frequency:", "Frequency", 0, 0, 100000);
+				if (writeEntry.frequency == -1) { return; }
+
+				if (selectedRows.IsEmpty())
+				{
+					writeMenu->AddWriteEntry(writeEntry);
+				}
+
+				for (int i = 0; i < selectedRows.GetCount(); i++)
+				{
+					int currentRow = selectedRows.Item(i);
+					writeEntry.address = addressPool[currentRow];
+					writeMenu->AddWriteEntry(writeEntry);
+				}
+			}, 106);
 	}
 	
 	wxMenuItem* remove = menu.Append(102, "Remove");
-	remove->SetBackgroundColour(wxColour(60, 60, 60));
-	remove->SetTextColour(wxColour(220, 220, 220));
+	remove->SetBackgroundColour(foregroundColor);
+	remove->SetTextColour(textColor);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void 
 		{ 
 			if (selectedRows.IsEmpty()) { RemoveRow(row); }
@@ -1668,18 +1730,18 @@ void Main::RightClickOptions(wxGridEvent& e)
 		}, 102);
 
 	wxMenuItem* cpyAddr = menu.Append(103, "Copy Address");
-	cpyAddr->SetBackgroundColour(wxColour(60, 60, 60));
-	cpyAddr->SetTextColour(wxColour(220, 220, 220));
+	cpyAddr->SetBackgroundColour(foregroundColor);
+	cpyAddr->SetTextColour(textColor);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 0)); }, 103);
 
 	wxMenuItem* cpyOff = menu.Append(104, "Copy Offset");
-	cpyOff->SetBackgroundColour(wxColour(60, 60, 60));
-	cpyOff->SetTextColour(wxColour(220, 220, 220));
+	cpyOff->SetBackgroundColour(foregroundColor);
+	cpyOff->SetTextColour(textColor);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 1)); }, 104);
 
 	wxMenuItem* cpyVal = menu.Append(105, "Copy Value");
-	cpyVal->SetBackgroundColour(wxColour(60, 60, 60));
-	cpyVal->SetTextColour(wxColour(220, 220, 220));
+	cpyVal->SetBackgroundColour(foregroundColor);
+	cpyVal->SetTextColour(textColor);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 2)); }, 105);
 
 	wxPoint pos = e.GetPosition();
@@ -1700,21 +1762,6 @@ void Main::RemoveRow(int row)
 void Main::OpenScanSettings(wxCommandEvent& e)
 {
 	scanSettingsMenu->OpenMenu(GetPosition());
-}
-
-void Main::OpenSavedMenu(wxCommandEvent& e)
-{
-	savedMenu->OpenMenu(GetPosition());
-}
-
-void Main::OpenBreakpointMenu(wxCommandEvent& e)
-{
-	breakpointMenu->OpenMenu(GetPosition());
-}
-
-void Main::OpenHexCalculator(wxCommandEvent& e)
-{
-	hexCalculator->OpenMenu(GetPosition());
 }
 
 void Main::ToggleManualUpdate(wxCommandEvent& e)
@@ -1780,23 +1827,23 @@ void Main::UpdateRoundFloats(wxCommandEvent& e)
 
 void Main::UpdateValueType(wxCommandEvent& e)
 {
-	int type = selectValueType->GetSelection();
-	if (type < 8) // it's an integer
+	ValueType type = (ValueType)selectValueType->GetSelection();
+	if (type < Float) // it's an integer
 	{
 		selectScanType->Set(wxArrayString(7, firstScans));
 		selectScanType->SetSelection(0);
 		
-		baseInputLabel->SetOwnForegroundColour(wxColour(220, 220, 220));
+		baseInputLabel->SetOwnForegroundColour(textColor);
 		baseInputLabel->Refresh();
 		baseInput->SetEditable(true);
-		baseInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+		baseInput->SetOwnForegroundColour(textColor);
 		baseInput->Refresh();
 		roundInput->SetEditable(false);
 		roundInput->SetValue("");
 		roundFloats->SetValue(false);
 		roundFloats->Disable();
 	}
-	else if (type > 9) // bytes or string
+	else if (type > Double) // bytes or string
 	{
 		selectScanType->Set(wxArrayString(1, "Equal"));
 		selectScanType->SetSelection(0);
@@ -1811,7 +1858,7 @@ void Main::UpdateValueType(wxCommandEvent& e)
 
 		base = 16;
 	}
-	else //floats
+	else // floats
 	{
 		selectScanType->Set(wxArrayString(7, firstScans));
 		selectScanType->SetSelection(0);
@@ -1840,6 +1887,12 @@ void Main::UpdateScanType(wxCommandEvent& e)
 		manualUpdateButton->Disable();
 		updateTimer->Stop();
 	}
+	else 
+	{
+		manualUpdate->Enable();
+		manualUpdateButton->Disable();
+		manualUpdate->SetValue(false);
+	}
 	
 	if (selectScanType->GetSelection() > 7)
 	{
@@ -1866,6 +1919,9 @@ void Main::CloseApp(wxCloseEvent& e)
 
 	hexCalculator->Destroy();
 
+	delete writeMenu->writeTimer;
+	writeMenu->Destroy();
+
 	delete updateTimer;
 	delete keyInputTimer;
 
@@ -1878,6 +1934,7 @@ void Main::CloseApp(wxCloseEvent& e)
 wxBEGIN_EVENT_TABLE(SelectProcessMenu, wxFrame)
 EVT_CLOSE(CloseMenu)
 EVT_TEXT(ProcessNameInputID, SearchProcessList)
+EVT_CHECKBOX(UseDebugPrivilegeID, UpdateDebugPrivilege)
 EVT_LISTBOX_DCLICK(ProcessListID, SelectProcess)
 wxEND_EVENT_TABLE()
 
@@ -1885,19 +1942,39 @@ SelectProcessMenu::SelectProcessMenu(Main* mainPtr) : wxFrame(nullptr, MainWindo
 {
 	main = mainPtr;
 
-	SetOwnBackgroundColour(wxColour(35, 35, 35));
+	SetOwnBackgroundColour(backgroundColor);
 
 	processNameInput = new wxTextCtrl(this, ProcessNameInputID, "", wxPoint(0, 0), wxSize(9999, 25));
-	processNameInput->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	processNameInput->SetOwnForegroundColour(wxColour(220, 220, 220));
+	processNameInput->SetOwnBackgroundColour(foregroundColor);
+	processNameInput->SetOwnForegroundColour(textColor);
+
+	useDebugPrivilege = new wxCheckBox(this, UseDebugPrivilegeID, "Use Debug Privilege (must be running as administrator to use)");
+	useDebugPrivilege->SetOwnForegroundColour(textColor);
+
+	BOOL fRet = FALSE;
+	HANDLE hToken = NULL;
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) 
+	{
+		TOKEN_ELEVATION Elevation;
+		DWORD cbSize = sizeof(TOKEN_ELEVATION);
+		if (GetTokenInformation(hToken, TokenElevation, &Elevation, sizeof(Elevation), &cbSize)) 
+		{
+			if (Elevation.TokenIsElevated == FALSE) 
+			{
+				useDebugPrivilege->Disable();
+			}
+		}
+	}
+	if (hToken) { CloseHandle(hToken); }
 
 	processList = new wxListBox(this, ProcessListID, wxPoint(0, 0), wxSize(9999, 9999));
-	processList->SetOwnBackgroundColour(wxColour(60, 60, 60));
-	processList->SetOwnForegroundColour(wxColour(220, 220, 220));
+	processList->SetOwnBackgroundColour(foregroundColor);
+	processList->SetOwnForegroundColour(textColor);
 
 	vSizer = new wxBoxSizer(wxVERTICAL);
 
 	vSizer->Add(processNameInput, 0, wxALL, 10);
+	vSizer->Add(useDebugPrivilege, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
 	vSizer->Add(processList, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
 
 	SetSizer(vSizer);
@@ -1990,17 +2067,55 @@ void SelectProcessMenu::SearchProcessList(wxCommandEvent& e)
 
 void SelectProcessMenu::SelectProcess(wxCommandEvent& e)
 {
-	main->UpdateProcessSelection(currentProcIds[processList->GetSelection()]);
+	int selection = processList->GetSelection();
+	
+	HANDLE procHandle = OpenProcess(PROCESS_ALL_ACCESS, NULL, currentProcIds[selection]);
 
-	// close 
-	wxCloseEvent e2;
-	CloseMenu(e2);
+	if (procHandle) 
+	{
+		main->UpdateProcessSelection(procHandle, processList->GetString(selection));
+
+		// close this menu
+		wxCloseEvent e2;
+		CloseMenu(e2);
+	}
+	else
+	{
+		wxMessageBox("Failed to open process. You may need to use debug privilege", "Failed to open process");
+	}
+}
+
+void SelectProcessMenu::UpdateDebugPrivilege(wxCommandEvent& e)
+{
+	LUID luid;
+	LookupPrivilegeValueW(NULL, SE_DEBUG_NAME, &luid);
+
+	TOKEN_PRIVILEGES tp;
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+
+	if (useDebugPrivilege->IsChecked())
+	{
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED; // enable
+	}
+	else 
+	{
+		tp.Privileges[0].Attributes = 0; // disable
+	}
+
+	HANDLE accessToken;
+	OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &accessToken);
+	
+	AdjustTokenPrivileges(accessToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL);
 }
 
 void SelectProcessMenu::OpenMenu(wxPoint position)
 {
+	position.x += 10;
+	position.y += 10;
 	SetPosition(position);
 	Show();
+	Raise();
 
 	RefreshProcessList();
 }

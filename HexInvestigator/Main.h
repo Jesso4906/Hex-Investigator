@@ -10,9 +10,7 @@
 #include "SavedMenu.h"
 #include "BreakpointMenu.h"
 #include "HexCalculator.h"
-
-#include "imagehlp.h"
-#pragma comment( lib, "imagehlp.lib" )
+#include "WriteMenu.h"
 
 class SelectProcessMenu; // forward delcared becasue it needs to access the Main class
 
@@ -20,6 +18,13 @@ class Main : public wxFrame, public Utils
 {
 public:
 	Main(); // constructor
+
+	wxMenuBar* menuBar = nullptr;
+
+	WriteMenu* writeMenu = nullptr;
+	SavedMenu* savedMenu = nullptr;
+	BreakpointMenu* breakpointMenu = nullptr;
+	HexCalculator* hexCalculator = nullptr;
 
 	wxButton* selectProc = nullptr;
 	SelectProcessMenu* selectProcMenu = nullptr;
@@ -31,14 +36,6 @@ public:
 
 	wxButton* scanSettingsButton = nullptr;
 	ScanSettingsMenu* scanSettingsMenu = nullptr;
-
-	SavedMenu* savedMenu = nullptr;
-	BreakpointMenu* breakpointMenu = nullptr;
-	HexCalculator* hexCalculator = nullptr;
-
-	wxButton* openSaved = nullptr;
-	wxButton* openBreakpointer = nullptr;
-	wxButton* openHexCalculator = nullptr;
 
 	wxTextCtrl* valueInput = nullptr;
 
@@ -71,6 +68,10 @@ public:
 	enum ids
 	{
 		MainWindowID,
+		OpenWriteMenuID,
+		OpenSavedListID,
+		OpenBreakpointMenuID,
+		OpenHexCalcID,
 		SelectProcessID,
 		SelectValueTypeID,
 		SelectScanTypeID,
@@ -81,9 +82,7 @@ public:
 		ManualUpdateToggleID,
 		ManualUpdateButtonID,
 		AddressListID,
-		OpenSavedListID,
-		OpenBreakpointMenuID,
-		OpenHexCalcID,
+		SelectToolID,
 		UpdateTimerID,
 		KeyInputTimerID
 	};
@@ -101,7 +100,7 @@ public:
 	{
 		uintptr_t rva;
 
-		enum SectionType { Code, InitData, UninitData } secitonType;
+		enum SectionType { Code, InitData, UninitData, Other } secitonType;
 
 		wxString sectionName;
 
@@ -169,7 +168,7 @@ public:
 	void FreezeProcess(bool freeze);
 
 	void OpenSelectProcessMenu(wxCommandEvent& e);
-	void UpdateProcessSelection(DWORD procId);
+	void UpdateProcessSelection(HANDLE newProcHandle, wxString procName);
 
 	void ResetScan();
 
@@ -189,12 +188,6 @@ public:
 	void UpdateBaseAndRoundingAndThreads();
 
 	void OpenScanSettings(wxCommandEvent& e);
-
-	void OpenSavedMenu(wxCommandEvent& e);
-
-	void OpenBreakpointMenu(wxCommandEvent& e);
-
-	void OpenHexCalculator(wxCommandEvent& e);
 
 	void UpdateRoundFloats(wxCommandEvent& e);
 
@@ -220,6 +213,8 @@ public:
 
 	wxTextCtrl* processNameInput = nullptr;
 
+	wxCheckBox* useDebugPrivilege = nullptr;
+
 	wxListBox* processList = nullptr;
 
 	wxBoxSizer* vSizer = nullptr;
@@ -235,6 +230,7 @@ public:
 	{
 		MainWindowID,
 		ProcessNameInputID,
+		UseDebugPrivilegeID,
 		ProcessListID
 	};
 
@@ -243,6 +239,8 @@ public:
 	void SearchProcessList(wxCommandEvent& e);
 
 	void SelectProcess(wxCommandEvent& e);
+
+	void UpdateDebugPrivilege(wxCommandEvent& e);
 
 	void OpenMenu(wxPoint position);
 

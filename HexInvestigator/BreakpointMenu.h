@@ -6,6 +6,7 @@
 #include <wx/grid.h>
 #include "TLHelp32.h"
 #include "Ntstatus.h"
+#include <winternl.h>
 
 class DebugThread; // forward decleration so BreakpointMenu doesn't throw errors
 
@@ -16,6 +17,8 @@ public:
 
 	wxTextCtrl* addressInput = nullptr;
 	wxChoice* selectSize = nullptr;
+
+	wxCheckBox* setBeingDebugged = nullptr;
 
 	wxButton* attachDebugger = nullptr;
 	wxButton* detachDebugger = nullptr;
@@ -123,6 +126,16 @@ public:
 
 	// thread execution starts heres
 	virtual void* Entry() wxOVERRIDE;
+
+	struct ProcessEnvironmentBlock
+	{
+		BYTE Reserved1[2];
+		BYTE BeingDebugged;
+	};
+
+	typedef NTSTATUS(__stdcall* tNtQueryInformationProcess)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+
+	uintptr_t GetPEBAddress(HANDLE procHandle);
 
 	BreakpointMenu* breakpointMenu = nullptr;
 	HANDLE procHandle;

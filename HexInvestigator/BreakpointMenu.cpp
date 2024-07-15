@@ -31,6 +31,9 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	selectSize->SetToolTip("Size of breakpoint");
 	selectSize->Disable();
 
+	setBeingDebugged = new wxCheckBox(this, wxID_ANY, "Set BeingDebugged to 0 in the PEB after attaching debugger");
+	setBeingDebugged->SetOwnForegroundColour(textColor);
+
 	attachDebugger = new wxButton(this, AttachDebuggerID, "Attach Debugger", wxPoint(0, 0), wxSize(100, 25));
 	attachDebugger->SetOwnBackgroundColour(foregroundColor);
 	attachDebugger->SetOwnForegroundColour(textColor);
@@ -87,6 +90,8 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetColSize(2, 9999);
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
 
+	addrList->AppendRows(1);
+
 	infoAboutAddresses = new wxStaticText(this, wxID_ANY, "*Addresses here correspond to the instruction after the hit instruction");
 	infoAboutAddresses->SetOwnForegroundColour(textColor);
 
@@ -110,6 +115,7 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 
 	vSizer->Add(infoAboutAddresses, 0, wxLEFT, 10);
 	vSizer->Add(row1Sizer, 0, wxEXPAND | wxCENTER);
+	vSizer->Add(setBeingDebugged, 0, wxLEFT | wxBOTTOM, 10);
 	vSizer->Add(row2Sizer, 0, wxEXPAND | wxCENTER);
 	vSizer->Add(row3Sizer, 0, wxEXPAND | wxCENTER);
 	vSizer->Add(addrList, 0, wxRIGHT | wxLEFT | wxBOTTOM, 10);
@@ -264,15 +270,6 @@ bool BreakpointMenu::DisableDebugRegisters()
 
 void BreakpointMenu::AttachDebugger(wxCommandEvent& e)
 {
-	int procId = GetProcessId(procHandle);
-	
-	if (!DebugActiveProcess(procId)) // this is just a check to make sure it works. the debugger is attached in the thread.
-	{
-		wxMessageBox("Error attaching debugger", "Can't Attach Debugger");
-		return;
-	}
-	DebugActiveProcessStop(procId);
-
 	debugThread = new DebugThread(this, procHandle);
 
 	if (debugThread->Create() != wxTHREAD_NO_ERROR)
@@ -288,20 +285,6 @@ void BreakpointMenu::AttachDebugger(wxCommandEvent& e)
 		delete debugThread;
 		return;
 	}
-
-	updateListTimer->Start(50);
-
-	attachDebugger->Disable();
-	detachDebugger->Enable();
-
-	addressInput->Enable();
-	selectSize->Enable();
-
-	shbpWrite->Enable();
-	shbpReadWrite->Enable();
-	shbpExecute->Enable();
-
-	isDebuggerAttached = true;
 }
 
 void BreakpointMenu::DetachDebugger(wxCommandEvent& e)
@@ -465,7 +448,10 @@ void BreakpointMenu::AddAddressToList(uintptr_t address)
 			{
 				if (address >= (uintptr_t)modEntry.modBaseAddr && address <= (((uintptr_t)modEntry.modBaseAddr) + modEntry.modBaseSize)) 
 				{
-					entry.moduleName = wxString(modEntry.szModule);
+					std::stringstream modOffsetToHex;
+					modOffsetToHex << std::hex << (address - (uintptr_t)modEntry.modBaseAddr);
+
+					entry.moduleName = "<" + wxString(modEntry.szModule) + ">+" + modOffsetToHex.str();
 					break;
 				}
 
@@ -509,13 +495,19 @@ void BreakpointMenu::RightClickOptions(wxGridEvent& e)
 
 	int row = e.GetRow();
 
-	wxMenuItem* cpyAddr = menu.Append(202, "Copy Address");
+	wxMenuItem* cpyAddr = new wxMenuItem(0, 202, "Copy Address");
 	cpyAddr->SetBackgroundColour(foregroundColor);
 	cpyAddr->SetTextColour(textColor);
+	menu.Append(cpyAddr);
 	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 0)); }, 202);
 
+	wxMenuItem* cpyMod = menu.Append(203, "Copy Module + Offset");
+	cpyMod->SetBackgroundColour(foregroundColor);
+	cpyMod->SetTextColour(textColor);
+	menu.Bind(wxEVT_MENU, [&](wxCommandEvent& bs) -> void { CopyToClipboard(addrList->GetCellValue(row, 1)); }, 203);
+
 	wxPoint pos = e.GetPosition();
-	PopupMenu(&menu, wxPoint(pos.x+10, pos.y+112));
+	PopupMenu(&menu, wxPoint(pos.x+10, pos.y+150));
 	e.Skip();
 }
 
@@ -546,7 +538,42 @@ wxThread::ExitCode DebugThread::Entry()
 {
 	SetName("Debug Thread");
 
-	DebugActiveProcess(GetProcessId(procHandle));
+	if (!DebugActiveProcess(GetProcessId(procHandle))) 
+	{
+		DWORD error = GetLastError();
+		wxMessageBox("Error attaching debugger: " + std::to_string(error), "Can't Attach Debugger");
+		return (wxThread::ExitCode)0;
+	}
+	else 
+	{
+		breakpointMenu->updateListTimer->Start(50);
+
+		breakpointMenu->attachDebugger->Disable();
+		breakpointMenu->detachDebugger->Enable();
+
+		breakpointMenu->addressInput->Enable();
+		breakpointMenu->selectSize->Enable();
+
+		breakpointMenu->shbpWrite->Enable();
+		breakpointMenu->shbpReadWrite->Enable();
+		breakpointMenu->shbpExecute->Enable();
+
+		breakpointMenu->isDebuggerAttached = true;
+	}
+
+	if (breakpointMenu->setBeingDebugged->IsChecked()) 
+	{
+		uintptr_t pebBaseAddress = GetPEBAddress(procHandle);
+
+		if (pebBaseAddress != 0) 
+		{
+			ProcessEnvironmentBlock peb = {};
+			ReadProcessMemory(procHandle, (void*)pebBaseAddress, &peb, sizeof(peb), nullptr);
+
+			peb.BeingDebugged = 0;
+			WriteProcessMemory(procHandle, (void*)pebBaseAddress, &peb, sizeof(peb), nullptr);
+		}
+	}
 
 	DebugSetProcessKillOnExit(false); // dont kill the process when debugger is detached
 
@@ -568,4 +595,24 @@ wxThread::ExitCode DebugThread::Entry()
 	DebugActiveProcessStop(GetProcessId(procHandle));
 
 	return (wxThread::ExitCode)0;
+}
+
+
+uintptr_t DebugThread::GetPEBAddress(HANDLE procHandle)
+{
+	tNtQueryInformationProcess NtQueryInfoProc = (tNtQueryInformationProcess)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtQueryInformationProcess");
+	if (!NtQueryInfoProc)
+	{
+		return 0;
+	}
+
+	PROCESS_BASIC_INFORMATION pbi;
+
+	NTSTATUS status = NtQueryInfoProc(procHandle, ProcessBasicInformation, &pbi, sizeof(pbi), 0);
+	if (NT_SUCCESS(status))
+	{
+		return (uintptr_t)pbi.PebBaseAddress;
+	}
+
+	return 0;
 }

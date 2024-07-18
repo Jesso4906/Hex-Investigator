@@ -20,16 +20,18 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 {
 	SetOwnBackgroundColour(backgroundColor);
 
+	// procHandle must be updated in UpdateProcessSelection
 	writeMenu = new WriteMenu(procHandle);
 	savedMenu = new SavedMenu(procHandle, writeMenu);
 	breakpointMenu = new BreakpointMenu(procHandle);
 	hexCalculator = new HexCalculator();
+	disassembler = new DisassemblerMenu(procHandle);
 
 	menuBar = new wxMenuBar();
 
 	wxMenu* toolMenu = new wxMenu();
 
-	wxMenuItem* openWriteMenu = new wxMenuItem(0, OpenWriteMenuID, "Write Menu");
+	wxMenuItem* openWriteMenu = new wxMenuItem(0, OpenWriteMenuID, "Write Operation Setter");
 	openWriteMenu->SetBackgroundColour(foregroundColor);
 	openWriteMenu->SetTextColour(textColor);
 	toolMenu->Append(openWriteMenu);
@@ -40,7 +42,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	openSavedAddresses->SetTextColour(textColor);
 	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { savedMenu->OpenMenu(GetPosition()); }, OpenSavedListID);
 
-	wxMenuItem* openBreakpointMenu = toolMenu->Append(OpenBreakpointMenuID, "Breakpoint Menu");
+	wxMenuItem* openBreakpointMenu = toolMenu->Append(OpenBreakpointMenuID, "Hardware Breakpoint Setter");
 	openBreakpointMenu->SetBackgroundColour(foregroundColor);
 	openBreakpointMenu->SetTextColour(textColor);
 	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { breakpointMenu->OpenMenu(GetPosition()); }, OpenBreakpointMenuID);
@@ -49,6 +51,11 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	openHexCalculator->SetBackgroundColour(foregroundColor);
 	openHexCalculator->SetTextColour(textColor);
 	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { hexCalculator->OpenMenu(GetPosition()); }, OpenHexCalcID);
+
+	wxMenuItem* openDisassembler = toolMenu->Append(OpenDisassemblerID, "Disassembler");
+	openDisassembler->SetBackgroundColour(foregroundColor);
+	openDisassembler->SetTextColour(textColor);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { disassembler->OpenMenu(GetPosition()); }, OpenDisassemblerID);
 
 	menuBar->Append(toolMenu, "Tools");
 	this->SetMenuBar(menuBar);
@@ -59,13 +66,13 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 	selectProcMenu = new SelectProcessMenu(this);
 
-	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(12, typeStrs));
+	selectValueType = new wxChoice(this, SelectValueTypeID, wxPoint(0, 0), wxSize(70, 50), wxArrayString(numberOfValueTypes, typeStrs));
 	selectValueType->SetSelection(1);
 	selectValueType->SetOwnBackgroundColour(foregroundColor);
 	selectValueType->SetOwnForegroundColour(textColor);
 
-	selectScanType = new wxChoice(this, SelectScanTypeID, wxPoint(0, 0), wxSize(120, 50), wxArrayString(7, firstScans));
-	selectScanType->SetSelection(0);
+	selectScanType = new wxChoice(this, SelectScanTypeID, wxPoint(0, 0), wxSize(120, 50), wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
+	selectScanType->SetSelection(Equal);
 	selectScanType->SetOwnBackgroundColour(foregroundColor);
 	selectScanType->SetOwnForegroundColour(textColor);
 
@@ -113,6 +120,11 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	valueInput->SetOwnBackgroundColour(foregroundColor);
 	valueInput->SetOwnForegroundColour(textColor);
 
+	valueInput2 = new wxTextCtrl(this, wxID_ANY, "1", wxPoint(0, 0), wxSize(9999, 25));
+	valueInput2->SetOwnBackgroundColour(foregroundColor);
+	valueInput2->SetOwnForegroundColour(textColor);
+	valueInput2->Hide();
+
 	manualUpdate = new wxCheckBox(this, ManualUpdateToggleID, "Manually Update List");
 	manualUpdate->SetOwnForegroundColour(textColor);
 
@@ -149,6 +161,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	row1Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row2Sizer = new wxBoxSizer(wxHORIZONTAL);
 	row3Sizer = new wxBoxSizer(wxHORIZONTAL);
+	row4Sizer = new wxBoxSizer(wxHORIZONTAL);
 	vSizer = new wxBoxSizer(wxVERTICAL);
 
 	row1Sizer->Add(selectProc, 0, wxLEFT | wxTOP | wxRIGHT, 10);
@@ -167,12 +180,15 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	row2Sizer->Add(threadsInputLabel, 0, wxRIGHT, 5);
 	row2Sizer->Add(threadsInput, 0, wxRIGHT, 10);
 
-	row3Sizer->Add(resultsTxt, 0, wxLEFT, 10);
+	row3Sizer->Add(valueInput, 0, wxALL, 10);
+	row3Sizer->Add(valueInput2, 0, wxTOP | wxRIGHT | wxBOTTOM, 10);
+
+	row4Sizer->Add(resultsTxt, 0, wxLEFT, 10);
 	
 	vSizer->Add(row1Sizer, 0, wxEXPAND);
 	vSizer->Add(row2Sizer, 0, wxEXPAND);
-	vSizer->Add(valueInput, 0, wxEXPAND | wxALL, 10);
 	vSizer->Add(row3Sizer, 0, wxEXPAND);
+	vSizer->Add(row4Sizer, 0, wxEXPAND);
 	vSizer->Add(addrList, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 
 	SetSizer(vSizer);
@@ -185,7 +201,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 
 // memory scan functions
 
-template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
+template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettings, T targetValue, T targetValue2, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
 	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
@@ -201,19 +217,19 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	auto meetsCondition = +[](T x, T y) { return x == y; }; // Equal
 	switch (scanSettings.scanType)
 	{
-	case 1: // Greater
+	case Greater:
 		meetsCondition = +[](T x, T y) { return x > y; };
 		break;
-	case 2: // Less
+	case Less:
 		meetsCondition = +[](T x, T y) { return x < y; };
 		break;
-	case 3: // Not Equal
+	case NotEqual:
 		meetsCondition = +[](T x, T y) { return x != y; };
 		break;
-	case 4: // Greater or Equal
+	case GreaterOrEqual:
 		meetsCondition = +[](T x, T y) { return x >= y; };
 		break;
-	case 5: // Less or Equal
+	case LessOrEqual:
 		meetsCondition = +[](T x, T y) { return x <= y; };
 		break;
 	}
@@ -239,7 +255,20 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 
 				if (scanSettings.roundFloats) { value = std::round(value * scanSettings.roundingValue) / scanSettings.roundingValue; }
 
-				if (meetsCondition(value, targetValue))
+				bool addAddress = false;
+				if (scanSettings.scanType == Between) 
+				{
+					if (value >= targetValue && value <= targetValue2) 
+					{
+						addAddress = true;
+					}
+				}
+				else if (meetsCondition(value, targetValue))
+				{
+					addAddress = true;
+				}
+
+				if (addAddress) 
 				{
 					newAddresses.push_back(baseAddress + i);
 
@@ -349,7 +378,7 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	return results;
 }
 
-template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
+template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSettings, T targetValue, T targetValue2, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr)
 {
 	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
@@ -359,22 +388,22 @@ template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSetting
 	auto meetsCondition = +[](T x, T y) { return x == y; }; // Equal, Increased By, Decreased By, Unchanged
 	switch (scanSettings.scanType)
 	{
-	case 1: // Greater 
-	case 8: // Increased
+	case Greater: 
+	case Increased:
 		meetsCondition = +[](T x, T y) { return x > y; };
 		break;
-	case 2: // Less
-	case 9: // Decreased
+	case Less:
+	case Decreased:
 		meetsCondition = +[](T x, T y) { return x < y; };
 		break;
-	case 3: // Not Equal
-	case 10: // Changed
+	case NotEqual:
+	case Changed:
 		meetsCondition = +[](T x, T y) { return x != y; };
 		break;
-	case 4: // Greater or Equal
+	case GreaterOrEqual:
 		meetsCondition = +[](T x, T y) { return x >= y; };
 		break;
-	case 5: // Less or Equal
+	case LessOrEqual:
 		meetsCondition = +[](T x, T y) { return x <= y; };
 		break;
 	}
@@ -392,15 +421,28 @@ template <typename T> unsigned int Main::NextScan(MemoryScanSettings scanSetting
 
 		T otherValue = targetValue;
 
-		if (scanSettings.scanType > 5) // scan types that need the old value
+		if (scanSettings.scanType > All) // scan types that need the old value
 		{
 			otherValue = *(T*)(dataPtr + (i * size)); // set to last value
 
-			if (scanSettings.scanType == 6) { otherValue += targetValue; } // checking increase by targetValue
-			else if (scanSettings.scanType == 7) { otherValue -= targetValue; } // checking decrease by targetValue
+			if (scanSettings.scanType == IncreasedBy) { otherValue += targetValue; } // checking increase by targetValue
+			else if (scanSettings.scanType == DecreasedBy) { otherValue -= targetValue; } // checking decrease by targetValue
 		}
 
-		if (meetsCondition(value, otherValue))
+		bool addAddress = false;
+		if (scanSettings.scanType == Between) 
+		{
+			if (value >= targetValue && value <= targetValue2) 
+			{
+				addAddress = true;
+			}
+		}
+		else if (meetsCondition(value, otherValue))
+		{
+			addAddress = true;
+		}
+
+		if (addAddress) 
 		{
 			newAddresses.push_back(addressPool[i]);
 
@@ -446,7 +488,7 @@ unsigned int Main::NextScanByteArray(MemoryScanSettings scanSettings, unsigned c
 	return results;
 }
 
-template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSettings, T targetValue, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) // this function is called after FirstScanAll because of the different way the addresses are stored
+template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSettings, T targetValue, T targetValue2, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) // this function is called after FirstScanAll because of the different way the addresses are stored
 {
 	std::vector<uintptr_t> newAddresses;
 	std::vector<unsigned char> newBytes;
@@ -459,22 +501,22 @@ template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSett
 	auto meetsCondition = +[](T x, T y) { return x == y; }; // Equal, Increased By, Decreased By, Unchanged
 	switch (scanSettings.scanType)
 	{
-	case 1: // Greater 
-	case 8: // Increased
+	case Greater: 
+	case Increased:
 		meetsCondition = +[](T x, T y) { return x > y; };
 		break;
-	case 2: // Less
-	case 9: // Decreased
+	case Less:
+	case Decreased:
 		meetsCondition = +[](T x, T y) { return x < y; };
 		break;
-	case 3: // Not Equal
-	case 10: // Changed
+	case NotEqual:
+	case Changed:
 		meetsCondition = +[](T x, T y) { return x != y; };
 		break;
-	case 4: // Greater or Equal
+	case GreaterOrEqual:
 		meetsCondition = +[](T x, T y) { return x >= y; };
 		break;
-	case 5: // Less or Equal
+	case LessOrEqual:
 		meetsCondition = +[](T x, T y) { return x <= y; };
 		break;
 	}
@@ -498,15 +540,28 @@ template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSett
 
 			T otherValue = targetValue;
 
-			if (scanSettings.scanType > 5) // scan types that need the old value
+			if (scanSettings.scanType > All) // scan types that need the old value
 			{ 
 				otherValue = *(T*)(dataPtr + byteIndex); // set to last value
 
-				if (scanSettings.scanType == 6) { otherValue += targetValue; } // checking increase by targetValue
-				else if (scanSettings.scanType == 7) { otherValue -= targetValue; } // checking decrease by targetValue
+				if (scanSettings.scanType == IncreasedBy) { otherValue += targetValue; } // checking increase by targetValue
+				else if (scanSettings.scanType == DecreasedBy) { otherValue -= targetValue; } // checking decrease by targetValue
 			}
 
-			if (meetsCondition(value, otherValue))
+			bool addAddress = false;
+			if (scanSettings.scanType == Between) 
+			{
+				if (value >= targetValue && value <= targetValue2) 
+				{
+					addAddress = true;
+				}
+			}
+			else if (meetsCondition(value, otherValue))
+			{
+				addAddress = true;
+			}
+
+			if (addAddress) 
 			{
 				newAddresses.push_back(address + j);
 
@@ -533,7 +588,7 @@ Main::MemoryScanSettings Main::CreateScanSettingsStruct()
 		scanSettingsMenu->minAddress,
 		scanSettingsMenu->maxAddress,
 		scanSettingsMenu->currentProtection,
-		selectScanType->GetSelection(),
+		(ScanType)selectScanType->GetSelection(),
 		roundings[roundingPlace],
 		roundFloats->IsChecked(),
 		scanSettingsMenu->image,
@@ -864,6 +919,7 @@ void Main::UpdateProcessSelection(HANDLE newProcHandle, wxString procName)
 	breakpointMenu->procHandle = procHandle;
 	scanSettingsMenu->procHandle = procHandle;
 	writeMenu->procHandle = procHandle;
+	disassembler->procHandle = procHandle;
 
 	firstScan->Enable();
 	scanSettingsButton->Enable();
@@ -891,7 +947,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	uintptr_t originalMax = memoryScanSettings.maxAddress;
 	
-	performedAllScan = selectScanType->GetSelection() == 6;
+	performedAllScan = selectScanType->GetSelection() == All;
 
 	unsigned int results = 0;
 
@@ -921,9 +977,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			long long targetValue = 0;
 			if (!valueInput->GetValue().ToLongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<long long>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			long long targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToLongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, long long targetValue, long long targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, targetValue, targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int32:
@@ -939,9 +1001,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<int>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, int targetValue, int targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, targetValue, targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int16:
@@ -957,9 +1025,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<short>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, (short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, short targetValue, short targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, (short)targetValue, (short)targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int8:
@@ -975,9 +1049,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<char>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, (char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, char targetValue, char targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, (char)targetValue, (char)targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt64:
@@ -993,9 +1073,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned long long targetValue = 0;
 			if (!valueInput->GetValue().ToULongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned long long targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			unsigned long long targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToULongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, unsigned long long targetValue, unsigned long long targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<unsigned long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, targetValue, targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt32:
@@ -1011,9 +1097,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned int targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, unsigned int targetValue, unsigned int targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<unsigned int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, targetValue, targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt16:
@@ -1029,9 +1121,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned short targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, (unsigned short)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, unsigned short targetValue, unsigned short targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<unsigned short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, (unsigned short)targetValue, (unsigned short)targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt8:
@@ -1047,9 +1145,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, unsigned char targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, (unsigned char)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, unsigned char targetValue, unsigned char targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<unsigned char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, (unsigned char)targetValue, (unsigned char)targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Float:
@@ -1065,9 +1169,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, float targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<float>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, (float)targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			double targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, float targetValue, float targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<float>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, (float)targetValue, (float)targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Double:
@@ -1083,9 +1193,15 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
-			scanThreads[i] = std::thread([](Main* main, double targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->FirstScan<double>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, targetValue, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
+			double targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
+			scanThreads[i] = std::thread([](Main* main, double targetValue, double targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->FirstScan<double>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, targetValue, targetValue2, &results, memoryScanSettings, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Bytes:
@@ -1173,8 +1289,8 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	scanning = true;
 
 	if (valueType > Double) { return; } // dont change the scan options if the type is a byte array
-	selectScanType->Set(wxArrayString(12, nextScans));
-	selectScanType->SetSelection(0);
+	selectScanType->Set(wxArrayString(numberOfNextScanTypes, scanTypeStrs));
+	selectScanType->SetSelection(Equal);
 	valueInput->Show();
 }
 
@@ -1183,7 +1299,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	if (manualUpdate->IsChecked()) { updateTimer->Stop(); }
 	UpdateBaseAndRoundingAndThreads();
 
-	bool noInput = selectScanType->GetSelection() > 7; // input will not be read if scan type is Increased, Decreased, Changed, or Unchanged
+	bool noInput = selectScanType->GetSelection() > DecreasedBy; // input will not be read if scan type is Increased, Decreased, Changed, or Unchanged
 
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	uintptr_t originalMax = addressPool.size();
@@ -1211,17 +1327,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			long long targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToLongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			long long targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between)
+			{
+				if (!noInput && !valueInput2->GetValue().ToLongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan) 
 			{ 
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<long long>(settings, targetValue, addressesPtr, bytesPtr); }, 
-					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, long long targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<long long>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, long long targetValue, long long targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int32:
@@ -1229,17 +1351,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between)
+			{
+				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<int>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, int targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<int>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, int targetValue, int targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int16:
@@ -1247,17 +1375,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between)
+			{
+				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<short>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, (short)targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, short targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, (short)targetValue, (short)targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<short>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, (short)targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, short targetValue, short targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, (short)targetValue, (short)targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Int8:
@@ -1265,17 +1399,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between)
+			{
+				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<char>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, (char)targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, char targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, (char)targetValue, (char)targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<char>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, (char)targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, char targetValue, char targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, (char)targetValue, (char)targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt64:
@@ -1283,17 +1423,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			unsigned long long targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToULongLong(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			unsigned long long targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToULongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned long long targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<unsigned long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<unsigned long long>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned long long targetValue, unsigned long long targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<unsigned long long>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt32:
@@ -1301,35 +1447,47 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<unsigned int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<unsigned int>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned int targetValue, unsigned int targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<unsigned int>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt16:
 		{
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
 
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, (unsigned short)targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned short targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<unsigned short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, (unsigned short)targetValue, (unsigned short)targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<unsigned short>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, (unsigned short)targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned short targetValue, unsigned short targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<unsigned short>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, (unsigned short)targetValue, (unsigned short)targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case UInt8:
@@ -1337,17 +1495,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			unsigned int targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToUInt(&targetValue, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			unsigned int targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, (unsigned char)targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned char targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<unsigned char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, (unsigned char)targetValue, (unsigned char)targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<unsigned char>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, (unsigned char)targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, unsigned char targetValue, unsigned char targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<unsigned char>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, (unsigned char)targetValue, (unsigned char)targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Float:
@@ -1355,17 +1519,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			double targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<float>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, (float)targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, float targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<float>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, (float)targetValue, (float)targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<float>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, (float)targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, float targetValue, float targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<float>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, (float)targetValue, (float)targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Double:
@@ -1373,17 +1543,23 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			double targetValue = 0;
 			if (!noInput && !valueInput->GetValue().ToDouble(&targetValue)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
 
+			double targetValue2 = 0;
+			if (memoryScanSettings.scanType == Between) 
+			{
+				if (!noInput && !valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+			}
+
 			if (performedAllScan)
 			{
-				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-					{ *results += main->NextScanAll<double>(settings, targetValue, addressesPtr, bytesPtr); },
-					this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+				scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, double targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+					{ *results += main->NextScanAll<double>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+					this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 				break;
 			}
 
-			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
-				{ *results += main->NextScan<double>(settings, targetValue, addressesPtr, bytesPtr); },
-				this, memoryScanSettings, targetValue, &results, &addressLists[i], &byteLists[i]);
+			scanThreads[i] = std::thread([](Main* main, MemoryScanSettings settings, double targetValue, double targetValue2, unsigned int* results, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
+				{ *results += main->NextScan<double>(settings, targetValue, targetValue2, addressesPtr, bytesPtr); },
+				this, memoryScanSettings, targetValue, targetValue2, &results, &addressLists[i], &byteLists[i]);
 			break;
 		}
 		case Bytes:
@@ -1611,8 +1787,8 @@ void Main::ResetScan()
 	selectValueType->Enable();
 	valueInput->Enable();
 
-	selectScanType->Set(wxArrayString(7, firstScans));
-	selectScanType->SetSelection(0);
+	selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
+	selectScanType->SetSelection(Equal);
 
 	wxCommandEvent e;
 	UpdateValueType(e);
@@ -1830,8 +2006,8 @@ void Main::UpdateValueType(wxCommandEvent& e)
 	ValueType type = (ValueType)selectValueType->GetSelection();
 	if (type < Float) // it's an integer
 	{
-		selectScanType->Set(wxArrayString(7, firstScans));
-		selectScanType->SetSelection(0);
+		selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
+		selectScanType->SetSelection(Equal);
 		
 		baseInputLabel->SetOwnForegroundColour(textColor);
 		baseInputLabel->Refresh();
@@ -1846,7 +2022,7 @@ void Main::UpdateValueType(wxCommandEvent& e)
 	else if (type > Double) // bytes or string
 	{
 		selectScanType->Set(wxArrayString(1, "Equal"));
-		selectScanType->SetSelection(0);
+		selectScanType->SetSelection(Equal);
 		
 		baseInputLabel->SetOwnForegroundColour(wxColour(100, 100, 100));
 		baseInputLabel->Refresh();
@@ -1860,8 +2036,8 @@ void Main::UpdateValueType(wxCommandEvent& e)
 	}
 	else // floats
 	{
-		selectScanType->Set(wxArrayString(7, firstScans));
-		selectScanType->SetSelection(0);
+		selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
+		selectScanType->SetSelection(Equal);
 		
 		baseInputLabel->SetOwnForegroundColour(wxColour(100, 100, 100));
 		baseInputLabel->Refresh();
@@ -1877,7 +2053,9 @@ void Main::UpdateValueType(wxCommandEvent& e)
 
 void Main::UpdateScanType(wxCommandEvent& e)
 {
-	if (!scanning && selectScanType->GetSelection() == 6) 
+	ScanType scanType = (ScanType)selectScanType->GetSelection();
+	
+	if (!scanning && scanType == All)
 	{
 		valueInput->SetEditable(false);
 		valueInput->SetValue("");
@@ -1893,8 +2071,13 @@ void Main::UpdateScanType(wxCommandEvent& e)
 		manualUpdateButton->Disable();
 		manualUpdate->SetValue(false);
 	}
+
+	if (scanning && scanType == All)
+	{
+		selectScanType->SetSelection(Equal);
+	}
 	
-	if (selectScanType->GetSelection() > 7)
+	if (scanType > DecreasedBy)
 	{
 		valueInput->SetEditable(false);
 		valueInput->SetValue("");
@@ -1902,6 +2085,21 @@ void Main::UpdateScanType(wxCommandEvent& e)
 	else
 	{
 		valueInput->SetEditable(true);
+	}
+
+	if (scanType == Between) 
+	{
+		valueInput->SetMinSize(wxSize(235, 25));
+		valueInput->SetMaxSize(wxSize(235, 25));
+		valueInput2->Show();
+		Layout();
+	}
+	else 
+	{
+		valueInput->SetMinSize(wxSize(9999, 25));
+		valueInput->SetMaxSize(wxSize(9999, 25));
+		valueInput2->Hide();
+		Layout();
 	}
 } 
 

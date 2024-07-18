@@ -14,6 +14,9 @@ public:
 		Float, Double,
 		Bytes, ASCII
 	};
+
+	const int numberOfValueTypes = 12;
+	const int numberOfNonArrayValueTypes = 10;
 	
 	const char* typeStrs[12] =
 	{

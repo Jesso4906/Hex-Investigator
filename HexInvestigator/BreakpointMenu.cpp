@@ -79,7 +79,6 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetScrollRate(0, 10);
 	addrList->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	addrList->DisableDragRowSize();
-	addrList->DisableDragColSize();
 	addrList->EnableEditing(false);
 	addrList->SetColLabelValue(0, "Address");
 	addrList->SetColLabelValue(1, "Module");
@@ -89,8 +88,6 @@ BreakpointMenu::BreakpointMenu(HANDLE procH) : wxFrame(nullptr, MainWindowID, "B
 	addrList->SetColSize(1, 200);
 	addrList->SetColSize(2, 9999);
 	addrList->SetColLabelAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
-
-	addrList->AppendRows(1);
 
 	infoAboutAddresses = new wxStaticText(this, wxID_ANY, "*Addresses here correspond to the instruction after the hit instruction");
 	infoAboutAddresses->SetOwnForegroundColour(textColor);
@@ -270,6 +267,12 @@ bool BreakpointMenu::DisableDebugRegisters()
 
 void BreakpointMenu::AttachDebugger(wxCommandEvent& e)
 {
+	if (procHandle == 0 || procHandle == INVALID_HANDLE_VALUE)
+	{
+		wxMessageBox("Not attached to a process", "Can't attach debugger");
+		return;
+	}
+	
 	debugThread = new DebugThread(this, procHandle);
 
 	if (debugThread->Create() != wxTHREAD_NO_ERROR)

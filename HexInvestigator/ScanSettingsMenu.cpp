@@ -287,6 +287,7 @@ void ScanSettingsMenu::OpenMenu(wxPoint position)
 	SetPosition(position);
 	Show();
 	UpdateModuleAddresses();
+	Raise();
 }
 
 void ScanSettingsMenu::CloseMenu(wxCloseEvent& e) // stops this frame from being destroyed and the data being lost

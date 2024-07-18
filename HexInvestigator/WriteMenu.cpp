@@ -200,6 +200,12 @@ void WriteMenu::RightClickOptions(wxGridEvent& e)
 
 void WriteMenu::AddAddressButtonPress(wxCommandEvent& e)
 {
+	if (procHandle == 0 || procHandle == INVALID_HANDLE_VALUE)
+	{
+		wxMessageBox("Not attached to a process", "Can't set write operation");
+		return;
+	}
+	
 	WriteEntry entry;
 	
 	wxString addressInput = wxGetTextFromUser("Enter the address to write to", "Address", "0");
@@ -209,10 +215,10 @@ void WriteMenu::AddAddressButtonPress(wxCommandEvent& e)
 	addressInput.ToULongLong(&address, 16);
 	entry.address = address;
 
-	entry.type = (ValueType)wxGetSingleChoiceIndex("Chose the value type", "Type", wxArrayString(10, typeStrs));
+	entry.type = (ValueType)wxGetSingleChoiceIndex("Chose the value type", "Type", wxArrayString(numberOfNonArrayValueTypes, typeStrs));
 	if (entry.type == -1) { return; }
 
-	entry.operation = (Operation)wxGetSingleChoiceIndex("Chose the operation to execute", "Operation", wxArrayString(5, operationStrs));
+	entry.operation = (Operation)wxGetSingleChoiceIndex("Chose the operation to execute", "Operation", wxArrayString(numberOfOperations, operationStrs));
 	if (entry.operation == -1) { return; }
 
 	wxString valueInput = wxGetTextFromUser("Enter the value to use in the operation", "Value", "1");

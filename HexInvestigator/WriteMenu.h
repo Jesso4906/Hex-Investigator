@@ -37,6 +37,8 @@ public:
 		Divide
 	};
 
+	const int numberOfOperations = 5;
+
 	const char* operationStrs[5] =
 	{
 		"Set", "Add", "Subtract", "Multiply", "Divide"

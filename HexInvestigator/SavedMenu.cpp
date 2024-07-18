@@ -30,7 +30,6 @@ SavedMenu::SavedMenu(HANDLE procH, WriteMenu* wMenu) : wxFrame(nullptr, MainWind
 	addrList->SetScrollRate(0, 10);
 	addrList->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
 	addrList->DisableDragRowSize();
-	addrList->DisableDragColSize();
 	addrList->EnableEditing(false);
 	addrList->SetColLabelValue(0, "Address");
 	addrList->SetColLabelValue(1, "Type");
@@ -259,13 +258,19 @@ void SavedMenu::RemoveRow(int row)
 
 void SavedMenu::AddAddressButtonPress(wxCommandEvent& e) 
 {
+	if (procHandle == 0 || procHandle == INVALID_HANDLE_VALUE)
+	{
+		wxMessageBox("Not attached to a process", "Can't add address");
+		return;
+	}
+	
 	wxString addressInput = wxGetTextFromUser("Enter Address", "Add Address", "0");
 	if (addressInput == "") { return; }
 
 	uintptr_t address;
 	addressInput.ToULongLong(&address, 16);
 
-	ValueType type = (ValueType)wxGetSingleChoiceIndex("Type", "Enter Type", wxArrayString(12, typeStrs));
+	ValueType type = (ValueType)wxGetSingleChoiceIndex("Type", "Enter Type", wxArrayString(numberOfValueTypes, typeStrs));
 	if (type == -1) { return; }
 
 	int base = 10;

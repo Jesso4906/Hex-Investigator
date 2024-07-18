@@ -110,8 +110,18 @@ void DisassemblerMenu::Disassemble(uintptr_t address)
 	ZyanUSize offset = 0;
 	ZydisDisassembledInstruction instruction;
 
+	BOOL is32Bit;
+	IsWow64Process(procHandle, &is32Bit);
+
 	ZydisDecoder decoder;
-	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LEGACY_32, ZYDIS_STACK_WIDTH_32);
+	if (is32Bit == TRUE)
+	{
+		ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LEGACY_32, ZYDIS_STACK_WIDTH_32);
+	}
+	else 
+	{
+		ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
+	}
 
 	ZydisFormatter formatter;
 	ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);

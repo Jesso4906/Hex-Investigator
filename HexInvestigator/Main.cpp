@@ -2120,6 +2120,8 @@ void Main::CloseApp(wxCloseEvent& e)
 	delete writeMenu->writeTimer;
 	writeMenu->Destroy();
 
+	disassembler->Destroy();
+
 	delete updateTimer;
 	delete keyInputTimer;
 

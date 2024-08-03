@@ -944,6 +944,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	UpdateBaseAndRoundingAndThreads();
 
+	if (!scanSettingsMenu->UpdateMinAndMax()) { return; }
 	MemoryScanSettings memoryScanSettings = CreateScanSettingsStruct();
 	uintptr_t originalMax = memoryScanSettings.maxAddress;
 	
@@ -960,7 +961,14 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 
 	for (int i = 0; i < threads; i++) 
 	{
-		memoryScanSettings.maxAddress = originalMax * ((i+1) / (float)threads);
+		if (i == threads - 1) 
+		{ 
+			memoryScanSettings.maxAddress = originalMax;
+		}
+		else 
+		{
+			memoryScanSettings.maxAddress = originalMax * ((i + 1) / (float)threads);
+		}
 
 		switch (valueType)
 		{
@@ -1316,7 +1324,16 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	for (int i = 0; i < threads; i++) 
 	{
 		memoryScanSettings.minAddress = originalMax * (i / (float)threads);
-		memoryScanSettings.maxAddress = originalMax * ((i+1) / (float)threads);
+
+		if (i == threads - 1)
+		{
+			memoryScanSettings.maxAddress = originalMax;
+		}
+		else 
+		{
+			memoryScanSettings.maxAddress = originalMax * ((i + 1) / (float)threads);
+		}
+
 		if (performedAllScan && memoryScanSettings.minAddress % 2 != 0) { memoryScanSettings.minAddress--; } // the addresses are stored at even indexes while the region size is at the odd index
 		if (performedAllScan && memoryScanSettings.maxAddress % 2 != 0) { memoryScanSettings.maxAddress--; }
 		

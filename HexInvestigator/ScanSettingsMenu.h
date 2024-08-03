@@ -120,11 +120,7 @@ public:
 	void UpdateType(wxCommandEvent& e);
 	void DeselectType(wxCommandEvent& e);
 
-	bool UpdateMin();
-	bool UpdateMax();
-
-	void UpdateMinOnTextEnter(wxCommandEvent& e);
-	void UpdateMaxOnTextEnter(wxCommandEvent& e);
+	bool UpdateMinAndMax();
 
 	void UpdateSelectedModule(wxCommandEvent& e);
 	void UpdateModuleAddresses();

@@ -6,8 +6,6 @@ EVT_CHECKLISTBOX(ProtectionsListID, UpdateProtection)
 EVT_LISTBOX(ProtectionsListID, DeselectProtection)
 EVT_CHECKLISTBOX(MemoryTypeListID, UpdateType)
 EVT_LISTBOX(MemoryTypeListID, DeselectType)
-EVT_TEXT_ENTER(MinAddressInputID, UpdateMinOnTextEnter)
-EVT_TEXT_ENTER(MaxAddressInputID, UpdateMaxOnTextEnter)
 EVT_CHOICE(SelectModuleID, UpdateSelectedModule)
 EVT_CHOICE(SelectKeybindID, UpdateSelectedKeybind)
 wxEND_EVENT_TABLE()
@@ -143,9 +141,6 @@ void ScanSettingsMenu::DeselectType(wxCommandEvent& e)
 	typeChoice->DeselectAll();
 }
 
-void ScanSettingsMenu::UpdateMinOnTextEnter(wxCommandEvent& e) { UpdateMin(); }
-void ScanSettingsMenu::UpdateMaxOnTextEnter(wxCommandEvent& e) { UpdateMax(); }
-
 void ScanSettingsMenu::UpdateSelectedModule(wxCommandEvent& e)
 {
 	uintptr_t min;
@@ -240,45 +235,36 @@ void ScanSettingsMenu::UpdateSelectedKeybind(wxCommandEvent& e)
 	scanKeybind = keyCodes[e.GetSelection()];
 }
 
-bool ScanSettingsMenu::UpdateMin()
+bool ScanSettingsMenu::UpdateMinAndMax()
 {
-	uintptr_t address;
-	minAddrInput->GetValue().ToULongLong(&address, 16);
+	uintptr_t newMinAddress;
+	minAddrInput->GetValue().ToULongLong(&newMinAddress, 16);
 
-	std::stringstream toHex;
-	toHex << std::hex << address;
-	minAddrInput->SetValue(toHex.str());
+	std::stringstream minToHex;
+	minToHex << std::hex << newMinAddress;
+	minAddrInput->SetValue(minToHex.str());
 
-	if (address >= maxAddress) 
+	minAddress = newMinAddress;
+
+	uintptr_t newMaxAddress;
+	maxAddrInput->GetValue().ToULongLong(&newMaxAddress, 16);
+
+	std::stringstream maxToHex;
+	maxToHex << std::hex << newMaxAddress;
+	maxAddrInput->SetValue(maxToHex.str());
+
+	maxAddress = newMaxAddress;
+
+	if (minAddress >= maxAddress)
 	{
 		minAddress = 0;
 		minAddrInput->SetValue("0");
+		maxAddress = 0x7fffffffffff;
+		maxAddrInput->SetValue("7fffffffffff");
 		wxMessageBox("Min address must be less than max address.", "Invalid Input");
 		return false;
 	}
 
-	minAddress = address;
-
-	return true;
-}
-bool ScanSettingsMenu::UpdateMax()
-{
-	uintptr_t address;
-	maxAddrInput->GetValue().ToULongLong(&address, 16);
-
-	std::stringstream toHex;
-	toHex << std::hex << address;
-	maxAddrInput->SetValue(toHex.str());
-
-	if (address <= minAddress)
-	{
-		maxAddress = 0x7fffffffffff;
-		maxAddrInput->SetValue("7fffffffffff");
-		wxMessageBox("Max address must be greater than min address.", "Invalid Input");
-		return false;
-	}
-
-	maxAddress = address;
 	return true;
 }
 
@@ -292,5 +278,5 @@ void ScanSettingsMenu::OpenMenu(wxPoint position)
 
 void ScanSettingsMenu::CloseMenu(wxCloseEvent& e) // stops this frame from being destroyed and the data being lost
 {
-	if (UpdateMin() && UpdateMax()) { this->Hide(); }
+	if (UpdateMinAndMax()) { this->Hide(); }
 }

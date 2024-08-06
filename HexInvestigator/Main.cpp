@@ -240,7 +240,8 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
-		
+		if ((baseAddress + regionSize) > scanSettings.maxAddress) { regionSize -= (baseAddress + regionSize) - scanSettings.maxAddress; }
+
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
@@ -303,7 +304,8 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
-		
+		if ((baseAddress + regionSize) > scanSettings.maxAddress) { regionSize -= (baseAddress + regionSize) - scanSettings.maxAddress; }
+
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))
@@ -352,7 +354,8 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 	while (baseAddress < scanSettings.maxAddress && VirtualQueryEx(procHandle, (uintptr_t*)baseAddress, &mbi, sizeof(mbi)))
 	{
 		size_t regionSize = mbi.RegionSize - (baseAddress - (uintptr_t)mbi.BaseAddress); // VirtualQueryEx rounds down to the nearest page, so baseAddress may not always equal mbi.BaseAddress
-		
+		if ((baseAddress + regionSize) > scanSettings.maxAddress) { regionSize -= (baseAddress + regionSize) - scanSettings.maxAddress; }
+
 		if (mbi.State == MEM_COMMIT &&
 			(scanSettings.protection == -1 || mbi.Protect == scanSettings.protection) &&
 			((scanSettings.scanImageMem && mbi.Type == MEM_IMAGE) || (scanSettings.scanMappedMem && mbi.Type == MEM_MAPPED) || (scanSettings.scanPrivateMem && mbi.Type == MEM_PRIVATE)))

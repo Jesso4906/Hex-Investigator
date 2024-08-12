@@ -586,19 +586,18 @@ template <typename T> unsigned int Main::NextScanAll(MemoryScanSettings scanSett
 
 Main::MemoryScanSettings Main::CreateScanSettingsStruct()
 {
-	MemoryScanSettings memoryScanSettings =
-	{
-		scanSettingsMenu->minAddress,
-		scanSettingsMenu->maxAddress,
-		scanSettingsMenu->currentProtection,
-		(ScanType)selectScanType->GetSelection(),
-		roundings[roundingPlace],
-		roundFloats->IsChecked(),
-		scanSettingsMenu->image,
-		scanSettingsMenu->mapped,
-		scanSettingsMenu->priv,
-		scanSettingsMenu->alignMemory
-	};
+	MemoryScanSettings memoryScanSettings = {};
+	memoryScanSettings.minAddress = scanSettingsMenu->minAddress;
+	memoryScanSettings.maxAddress = scanSettingsMenu->maxAddress;
+	memoryScanSettings.protection = scanSettingsMenu->currentProtection;
+	memoryScanSettings.scanType = (ScanType)selectScanType->GetSelection();
+	memoryScanSettings.roundingValue = roundings[roundingPlace];
+	memoryScanSettings.roundFloats = roundFloats->IsChecked();
+	memoryScanSettings.scanImageMem = scanSettingsMenu->image;
+	memoryScanSettings.scanMappedMem = scanSettingsMenu->mapped;
+	memoryScanSettings.scanPrivateMem = scanSettingsMenu->priv;
+	memoryScanSettings.alignMemory = scanSettingsMenu->alignMemory;
+	memoryScanSettings.onlyScanNullTermStrs = scanSettingsMenu->onlyScanForNullTermStrs->IsChecked();
 
 	return memoryScanSettings;
 }
@@ -1229,8 +1228,10 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
+			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
+
 			const char* targetValue = new char[byteArraySize];
-			memcpy((void*)targetValue, val.ToAscii().data(), byteArraySize);
+			memcpy((void*)targetValue, val.ToAscii().data(), val.length());
 
 			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->FirstScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
@@ -1300,8 +1301,9 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	scanning = true;
 
 	if (valueType > Double) { return; } // dont change the scan options if the type is a byte array
+	ScanType scanType = (ScanType)selectScanType->GetSelection();
 	selectScanType->Set(wxArrayString(numberOfNextScanTypes, scanTypeStrs));
-	selectScanType->SetSelection(Equal);
+	selectScanType->SetSelection(scanType);
 	valueInput->Show();
 }
 
@@ -1596,8 +1598,10 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
+			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
+
 			const char* targetValue = new char[byteArraySize];
-			memcpy((void*)targetValue, val.ToAscii().data(), byteArraySize);
+			memcpy((void*)targetValue, val.ToAscii().data(), val.length());
 
 			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->NextScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },

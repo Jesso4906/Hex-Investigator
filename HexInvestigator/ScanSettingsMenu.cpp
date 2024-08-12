@@ -49,6 +49,10 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	freezeProcess->SetValue(false);
 	freezeProcess->SetOwnForegroundColour(textColor);
 
+	onlyScanForNullTermStrs = new wxCheckBox(this, wxID_ANY, "Only scan for null terminated strings");
+	onlyScanForNullTermStrs->SetValue(false);
+	onlyScanForNullTermStrs->SetOwnForegroundColour(textColor);
+
 	scanKeybindLabel = new wxStaticText(this, wxID_ANY, "First/next scan keybind:");
 	scanKeybindLabel->SetOwnForegroundColour(textColor);
 
@@ -89,13 +93,14 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 
 	column1Sizer->Add(protectionLabel, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column1Sizer->Add(protectChoice, 0, wxLEFT | wxRIGHT, 10);
+	column1Sizer->Add(scanKeybindLabel, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column1Sizer->Add(scanKeybindSelect, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 
 	column2Sizer->Add(typeLabel, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column2Sizer->Add(typeChoice, 0, wxLEFT | wxRIGHT, 10);
 	column2Sizer->Add(alignMemory, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column2Sizer->Add(freezeProcess, 0, wxLEFT | wxTOP | wxRIGHT, 10);
-	column2Sizer->Add(scanKeybindLabel, 0, wxLEFT | wxTOP | wxRIGHT, 10);
-	column2Sizer->Add(scanKeybindSelect, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column2Sizer->Add(onlyScanForNullTermStrs, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 
 	column3Sizer->Add(minAddrTxt, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column3Sizer->Add(minAddrInput, 0, wxLEFT | wxRIGHT, 10);

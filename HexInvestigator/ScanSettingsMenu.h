@@ -16,8 +16,8 @@ public:
 	wxCheckListBox* typeChoice = nullptr;
 
 	wxCheckBox* alignMemory = nullptr;
-
 	wxCheckBox* freezeProcess = nullptr;
+	wxCheckBox* onlyScanForNullTermStrs = nullptr;
 
 	wxStaticText* minAddrTxt = nullptr;
 	wxTextCtrl* minAddrInput = nullptr;

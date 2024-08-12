@@ -132,7 +132,7 @@ public:
 		ScanType scanType;
 		int roundingValue;
 
-		bool roundFloats, scanImageMem, scanMappedMem, scanPrivateMem, alignMemory, scanByRegions;
+		bool roundFloats, scanImageMem, scanMappedMem, scanPrivateMem, alignMemory, onlyScanNullTermStrs;
 	};
 
 	int base = 10;

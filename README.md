@@ -7,4 +7,4 @@ https://www.wxwidgets.org/
 Zydis amalgamated release used for disassembly
 https://github.com/zyantific/zydis/releases
 
-![alt text](https://github.com/Jesso4906/Hex-Investigator/blob/main/screenshot.PNG)
+![alt text](https://github.com/Jesso4906/Hex-Investigator/blob/main/screenshot.png)

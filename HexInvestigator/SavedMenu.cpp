@@ -106,10 +106,13 @@ void SavedMenu::UpdateListOnTimer(wxTimerEvent& e)
 			UpdateRow<double>(i, true);
 			break;
 		case Bytes:
-			UpdateRowByteArray(i, savedEntries[i].byteArraySize, false);
+			UpdateRowByteArray(i, savedEntries[i].byteArraySize, Bytes);
 			break;
-		case ASCII:
-			UpdateRowByteArray(i, savedEntries[i].byteArraySize, true);
+		case UTF8:
+			UpdateRowByteArray(i, savedEntries[i].byteArraySize, UTF8);
+			break;
+		case UTF16:
+			UpdateRowByteArray(i, savedEntries[i].byteArraySize, UTF16);
 			break;
 		}
 	}
@@ -135,19 +138,22 @@ template <typename T> void SavedMenu::UpdateRow(int row, bool isFloat)
 	addrList->SetCellValue(row, 3, valueStr);
 }
 
-void SavedMenu::UpdateRowByteArray(int row, int size, bool ascii)
+void SavedMenu::UpdateRowByteArray(int row, int size, ValueType type)
 {
 	unsigned char* value = new unsigned char[size];
 	ReadProcessMemory(procHandle, (uintptr_t*)savedEntries[row].address, value, size, 0);
 
-	std::string valueStr;
-
-	if (ascii) 
+	if (type == UTF8)
 	{
-		valueStr = std::string((const char*)value).substr(0, size);
+		addrList->SetCellValue(row, 3, std::string((const char*)value).substr(0, size));
 	}
-	else 
+	else if (type == UTF16)
 	{
+		addrList->SetCellValue(row, 3, std::wstring((const wchar_t*)value).substr(0, size / 2));
+	}
+	else
+	{
+		std::string valueStr = "";
 		for (int i = 0; i < size; i++)
 		{
 			std::stringstream byteToHex;
@@ -155,10 +161,10 @@ void SavedMenu::UpdateRowByteArray(int row, int size, bool ascii)
 			valueStr += byteToHex.str() + ' ';
 		}
 
-		delete[] value;
+		addrList->SetCellValue(row, 3, valueStr);
 	}
 
-	addrList->SetCellValue(row, 3, valueStr);
+	delete[] value;
 }
 
 void SavedMenu::WriteValueHandler(wxString input, uintptr_t* address, ValueType type, char base)

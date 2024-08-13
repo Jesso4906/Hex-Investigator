@@ -17,7 +17,6 @@ public:
 
 	wxStaticText* infoTxt = nullptr;
 
-	wxBoxSizer* row1Sizer = nullptr;
 	wxBoxSizer* vSizer = nullptr;
 
 	enum ids

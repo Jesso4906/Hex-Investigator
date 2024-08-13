@@ -150,6 +150,7 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="DisassemblerMenu.cpp" />
     <ClCompile Include="HexCalculator.cpp" />
+    <ClCompile Include="PointerScannerMenu.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="BreakpointMenu.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -162,6 +163,7 @@
     <ClInclude Include="App.h" />
     <ClInclude Include="DisassemblerMenu.h" />
     <ClInclude Include="HexCalculator.h" />
+    <ClInclude Include="PointerScannerMenu.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="BreakpointMenu.h" />
     <ClInclude Include="Main.h" />

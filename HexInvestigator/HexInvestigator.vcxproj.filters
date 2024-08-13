@@ -45,6 +45,9 @@
     <ClCompile Include="Zydis.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PointerScannerMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -75,6 +78,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Zydis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PointerScannerMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

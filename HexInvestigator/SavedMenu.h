@@ -43,7 +43,7 @@ public:
 
 	void UpdateListOnTimer(wxTimerEvent& e);
 	template <typename T> void UpdateRow(int row, bool isFloat);
-	void UpdateRowByteArray(int row, int size, bool ascii);
+	void UpdateRowByteArray(int row, int size, ValueType type);
 
 	void WriteValueHandler(wxString input, uintptr_t* address, ValueType type, char base);
 

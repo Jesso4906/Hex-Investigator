@@ -12,18 +12,18 @@ public:
 		Int64, Int32, Int16, Int8,
 		UInt64, UInt32, UInt16, UInt8,
 		Float, Double,
-		Bytes, ASCII
+		Bytes, UTF8, UTF16
 	};
 
-	const int numberOfValueTypes = 12;
+	const int numberOfValueTypes = 13;
 	const int numberOfNonArrayValueTypes = 10;
 	
-	const char* typeStrs[12] =
+	const char* typeStrs[13] =
 	{
 		"Int64", "Int32", "Int16", "Int8",
 		"UInt64", "UInt32", "UInt16", "UInt8",
 		"Float", "Double",
-		"Bytes", "ASCII"
+		"Bytes", "UTF-8", "UTF-16"
 	};
 
 	const wxColour backgroundColor = wxColour(35, 35, 35);
@@ -33,6 +33,8 @@ public:
 	const int updateRate = 150;
 
 	void CopyToClipboard(const char* txt);
+
+	wxString CommaFormatNum(unsigned int num);
 
 	char* i64toa(unsigned long long val, char* sz, unsigned radix, int neg);
 	char* lltoa(long long val, char* sz, unsigned radix);;

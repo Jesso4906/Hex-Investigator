@@ -9,6 +9,19 @@ void Utils::CopyToClipboard(const char* txt)
 	}
 }
 
+wxString Utils::CommaFormatNum(unsigned int num)
+{
+	std::string numStr = std::to_string(num);
+	int n = numStr.length() - 3;
+	while (n > 0)
+	{
+		numStr.insert(n, ",");
+		n -= 3;
+	}
+
+	return numStr;
+}
+
 //https://www.prowaretech.com/articles/current/c-plus-plus/procedures/itoa
 // 
 // 64-BIT NUMBER TO ASCII (USED BY LLTOA AND ULLTOA)

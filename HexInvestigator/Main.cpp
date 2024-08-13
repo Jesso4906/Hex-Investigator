@@ -26,6 +26,7 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	breakpointMenu = new BreakpointMenu(procHandle);
 	hexCalculator = new HexCalculator();
 	disassembler = new DisassemblerMenu(procHandle);
+	pointerScannerMenu = new PointerScannerMenu(procHandle);
 
 	menuBar = new wxMenuBar();
 
@@ -56,6 +57,11 @@ Main::Main() : wxFrame(nullptr, MainWindowID, "Hex Investigator x64", wxPoint(50
 	openDisassembler->SetBackgroundColour(foregroundColor);
 	openDisassembler->SetTextColour(textColor);
 	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { disassembler->OpenMenu(GetPosition()); }, OpenDisassemblerID);
+
+	wxMenuItem* openPointerScanner = toolMenu->Append(OpenPointerScannerID, "Pointer Scanner");
+	openPointerScanner->SetBackgroundColour(foregroundColor);
+	openPointerScanner->SetTextColour(textColor);
+	toolMenu->Bind(wxEVT_MENU, [&](wxCommandEvent& ce) -> void { pointerScannerMenu->OpenMenu(GetPosition()); }, OpenPointerScannerID);
 
 	menuBar->Append(toolMenu, "Tools");
 	this->SetMenuBar(menuBar);
@@ -683,7 +689,7 @@ template <typename T> void Main::UpdateList(bool isFloat)
 	}
 }
 
-void Main::UpdateListByteArray(int size, bool ascii)
+void Main::UpdateListByteArray(int size, ValueType type)
 {
 	for (int i = addrList->GetFirstFullyVisibleRow(); i < addrList->GetNumberRows(); i++)
 	{
@@ -692,9 +698,13 @@ void Main::UpdateListByteArray(int size, bool ascii)
 		unsigned char* value = new unsigned char[size];
 		ReadProcessMemory(procHandle, (uintptr_t*)addressPool[i], value, size, 0);
 
-		if (ascii) 
+		if (type == UTF8)
 		{
 			addrList->SetCellValue(i, 2, std::string((const char*)value).substr(0, size));
+		}
+		else if (type == UTF16)
+		{
+			addrList->SetCellValue(i, 2, std::wstring((const wchar_t*)value).substr(0, size / 2));
 		}
 		else 
 		{
@@ -922,6 +932,7 @@ void Main::UpdateProcessSelection(HANDLE newProcHandle, wxString procName)
 	scanSettingsMenu->procHandle = procHandle;
 	writeMenu->procHandle = procHandle;
 	disassembler->procHandle = procHandle;
+	pointerScannerMenu->procHandle = procHandle;
 
 	firstScan->Enable();
 	scanSettingsButton->Enable();
@@ -1224,14 +1235,28 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
-		case ASCII:
+		case UTF8:
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
 			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
 
 			const char* targetValue = new char[byteArraySize];
-			memcpy((void*)targetValue, val.ToAscii().data(), val.length());
+			memcpy((void*)targetValue, val.ToUTF8().data(), val.length());
+
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
+				{ *results += main->FirstScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
+				this, (unsigned char*)targetValue, &results, memoryScanSettings, &addressLists[i]);
+			break;
+		}
+		case UTF16:
+		{
+			wxString val = valueInput->GetValue();
+			byteArraySize = val.length() * 2;
+			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
+
+			const char* targetValue = new char[byteArraySize];
+			memcpy((void*)targetValue, val.wc_str(), val.length() * 2);
 
 			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->FirstScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
@@ -1258,14 +1283,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		byteLists[i].clear(); byteLists[i].shrink_to_fit();
 	}
 
-	// add commmas
-	std::string resultsStr = std::to_string(results);
-	int n = resultsStr.length() - 3;
-	while (n > 0) 
-	{
-		resultsStr.insert(n, ",");
-		n -= 3;
-	}
+	wxString resultsStr = CommaFormatNum(results);
 
 	if (results > 10000)
 	{
@@ -1594,14 +1612,28 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 				this, targetValue, &results, memoryScanSettings, &addressLists[i]);
 			break;
 		}
-		case ASCII:
+		case UTF8:
 		{
 			wxString val = valueInput->GetValue();
 			byteArraySize = val.length();
 			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
 
 			const char* targetValue = new char[byteArraySize];
-			memcpy((void*)targetValue, val.ToAscii().data(), val.length());
+			memcpy((void*)targetValue, val.ToUTF8().data(), val.length());
+
+			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
+				{ *results += main->NextScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
+				this, (unsigned char*)targetValue, &results, memoryScanSettings, &addressLists[i]);
+			break;
+		}
+		case UTF16:
+		{
+			wxString val = valueInput->GetValue();
+			byteArraySize = val.length() * 2;
+			if (memoryScanSettings.onlyScanNullTermStrs) { byteArraySize++; }
+
+			const char* targetValue = new char[byteArraySize];
+			memcpy((void*)targetValue, val.wc_str(), val.length() * 2);
 
 			scanThreads[i] = std::thread([](Main* main, unsigned char* targetValue, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr) -> void
 				{ *results += main->NextScanByteArray(settings, targetValue, main->byteArraySize, addressesPtr); delete[] targetValue; },
@@ -1634,14 +1666,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 	int rows = addrList->GetNumberRows();
 	if (rows > 0) { addrList->DeleteRows(0, rows); }
 
-	// add commmas
-	std::string resultsStr = std::to_string(results);
-	int n = resultsStr.length() - 3;
-	while (n > 0)
-	{
-		resultsStr.insert(n, ",");
-		n -= 3;
-	}
+	wxString resultsStr = CommaFormatNum(results);
 	
 	if (results > 10000)
 	{
@@ -1703,10 +1728,13 @@ void Main::UpdateListOnTimer(wxTimerEvent& e)
 		UpdateList<double>(true);
 		break;
 	case Bytes:
-		UpdateListByteArray(byteArraySize, false);
+		UpdateListByteArray(byteArraySize, Bytes);
 		break;
-	case ASCII:
-		UpdateListByteArray(byteArraySize, true);
+	case UTF8:
+		UpdateListByteArray(byteArraySize, UTF8);
+		break;
+	case UTF16:
+		UpdateListByteArray(byteArraySize, UTF16);
 		break;
 	}
 }
@@ -2145,6 +2173,8 @@ void Main::CloseApp(wxCloseEvent& e)
 	writeMenu->Destroy();
 
 	disassembler->Destroy();
+
+	pointerScannerMenu->Destroy();
 
 	delete updateTimer;
 	delete keyInputTimer;

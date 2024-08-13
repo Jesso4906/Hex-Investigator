@@ -12,6 +12,7 @@
 #include "HexCalculator.h"
 #include "WriteMenu.h"
 #include "DisassemblerMenu.h"
+#include "PointerScannerMenu.h"
 
 class SelectProcessMenu; // forward delcared becasue it needs to access the Main class
 
@@ -27,6 +28,7 @@ public:
 	BreakpointMenu* breakpointMenu = nullptr;
 	HexCalculator* hexCalculator = nullptr;
 	DisassemblerMenu* disassembler = nullptr;
+	PointerScannerMenu* pointerScannerMenu = nullptr;
 
 	wxButton* selectProc = nullptr;
 	SelectProcessMenu* selectProcMenu = nullptr;
@@ -77,6 +79,7 @@ public:
 		OpenBreakpointMenuID,
 		OpenHexCalcID,
 		OpenDisassemblerID,
+		OpenPointerScannerID,
 		SelectProcessID,
 		SelectValueTypeID,
 		SelectScanTypeID,
@@ -171,7 +174,7 @@ public:
 	bool ParseByteArray(wxString str, unsigned char** bytes);
 
 	template <typename T> void UpdateList(bool isFloat);
-	void UpdateListByteArray(int size, bool ascii);
+	void UpdateListByteArray(int size, ValueType type);
 
 	AddressModuleInfo GetAddressModuleInfo(uintptr_t address);
 

@@ -1002,6 +1002,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToLongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, long long targetValue, long long targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1026,6 +1027,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, int targetValue, int targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1050,6 +1052,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, short targetValue, short targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1074,6 +1077,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, char targetValue, char targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1098,6 +1102,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToULongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, unsigned long long targetValue, unsigned long long targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1122,6 +1127,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, unsigned int targetValue, unsigned int targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1146,6 +1152,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, unsigned short targetValue, unsigned short targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1170,6 +1177,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, unsigned char targetValue, unsigned char targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1194,6 +1202,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, float targetValue, float targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1218,6 +1227,7 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			scanThreads[i] = std::thread([](Main* main, double targetValue, double targetValue2, unsigned int* results, MemoryScanSettings settings, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr) -> void
@@ -1371,6 +1381,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between)
 			{
 				if (!noInput && !valueInput2->GetValue().ToLongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan) 
@@ -1395,6 +1406,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between)
 			{
 				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1419,6 +1431,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between)
 			{
 				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1443,6 +1456,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between)
 			{
 				if (!noInput && !valueInput2->GetValue().ToInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1467,6 +1481,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToULongLong(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1491,6 +1506,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1515,6 +1531,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1539,6 +1556,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToUInt(&targetValue2, base)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1563,6 +1581,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1587,6 +1606,7 @@ void Main::NextScanButtonPress(wxCommandEvent& e)
 			if (memoryScanSettings.scanType == Between) 
 			{
 				if (!noInput && !valueInput2->GetValue().ToDouble(&targetValue2)) { wxMessageBox("Invalid Value", "Can't Scan"); return; }
+				if (targetValue > targetValue2) { wxMessageBox("First value must be smaller than the second", "Can't Scan"); return; }
 			}
 
 			if (performedAllScan)
@@ -1839,8 +1859,9 @@ void Main::ResetScan()
 	selectValueType->Enable();
 	valueInput->Enable();
 
+	ScanType previousSelection = (ScanType)selectScanType->GetSelection();
 	selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
-	selectScanType->SetSelection(Equal);
+	selectScanType->SetSelection(previousSelection);
 
 	wxCommandEvent e;
 	UpdateValueType(e);
@@ -2056,10 +2077,11 @@ void Main::UpdateRoundFloats(wxCommandEvent& e)
 void Main::UpdateValueType(wxCommandEvent& e)
 {
 	ValueType type = (ValueType)selectValueType->GetSelection();
+	ScanType previousScanType = (ScanType)selectScanType->GetSelection();
 	if (type < Float) // it's an integer
 	{
 		selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
-		selectScanType->SetSelection(Equal);
+		selectScanType->SetSelection(previousScanType);
 		
 		baseInputLabel->SetOwnForegroundColour(textColor);
 		baseInputLabel->Refresh();
@@ -2075,6 +2097,10 @@ void Main::UpdateValueType(wxCommandEvent& e)
 	{
 		selectScanType->Set(wxArrayString(1, "Equal"));
 		selectScanType->SetSelection(Equal);
+		valueInput->SetMinSize(wxSize(9999, 25));
+		valueInput->SetMaxSize(wxSize(9999, 25));
+		valueInput2->Hide();
+		Layout();
 		
 		baseInputLabel->SetOwnForegroundColour(wxColour(100, 100, 100));
 		baseInputLabel->Refresh();
@@ -2089,7 +2115,7 @@ void Main::UpdateValueType(wxCommandEvent& e)
 	else // floats
 	{
 		selectScanType->Set(wxArrayString(numberOfFirstScanTypes, scanTypeStrs));
-		selectScanType->SetSelection(Equal);
+		selectScanType->SetSelection(previousScanType);
 		
 		baseInputLabel->SetOwnForegroundColour(wxColour(100, 100, 100));
 		baseInputLabel->Refresh();

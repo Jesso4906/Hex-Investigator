@@ -602,7 +602,7 @@ Main::MemoryScanSettings Main::CreateScanSettingsStruct()
 	memoryScanSettings.scanImageMem = scanSettingsMenu->image;
 	memoryScanSettings.scanMappedMem = scanSettingsMenu->mapped;
 	memoryScanSettings.scanPrivateMem = scanSettingsMenu->priv;
-	memoryScanSettings.alignMemory = scanSettingsMenu->alignMemory;
+	memoryScanSettings.alignMemory = scanSettingsMenu->alignMemory->IsChecked();
 	memoryScanSettings.onlyScanNullTermStrs = scanSettingsMenu->onlyScanForNullTermStrs->IsChecked();
 
 	return memoryScanSettings;

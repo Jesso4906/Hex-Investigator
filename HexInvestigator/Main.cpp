@@ -284,7 +284,7 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 
 					results++;
 
-					if (results > scanSettings.maxResults)
+					if (cancelledScanDueToResultsNum || results > scanSettings.maxResults)
 					{
 						cancelledScanDueToResultsNum = true;
 						return 0;
@@ -336,7 +336,7 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 						newAddresses.push_back(baseAddress + i);
 						results++;
 
-						if (results > scanSettings.maxResults)
+						if (cancelledScanDueToResultsNum || results > scanSettings.maxResults)
 						{
 							cancelledScanDueToResultsNum = true;
 							return 0;
@@ -389,7 +389,7 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 
 			results += regionSize / offset;
 
-			if (results > scanSettings.maxResults)
+			if (cancelledScanDueToResultsNum || results > scanSettings.maxResults)
 			{
 				cancelledScanDueToResultsNum = true;
 				return 0;
@@ -1297,13 +1297,6 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		memoryScanSettings.minAddress = memoryScanSettings.maxAddress;
 	}
 
-	if (cancelledScanDueToResultsNum) 
-	{
-		ResetScan();
-		cancelledScanDueToResultsNum = false;
-		return;
-	}
-
 	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
 
 	if (freezeDuringScan) { FreezeProcess(true); }
@@ -1312,11 +1305,26 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	{
 		scanThreads[i].join(); // wait for thread to finish
 
-		addressPool.insert(addressPool.end(), addressLists[i].begin(), addressLists[i].end());
-		addressLists[i].clear(); addressLists[i].shrink_to_fit();
+		if (!cancelledScanDueToResultsNum && results <= scanSettingsMenu->maxResults)
+		{
+			addressPool.insert(addressPool.end(), addressLists[i].begin(), addressLists[i].end());
+			addressLists[i].clear(); addressLists[i].shrink_to_fit();
 
-		bytes.insert(bytes.end(), byteLists[i].begin(), byteLists[i].end());
-		byteLists[i].clear(); byteLists[i].shrink_to_fit();
+			bytes.insert(bytes.end(), byteLists[i].begin(), byteLists[i].end());
+			byteLists[i].clear(); byteLists[i].shrink_to_fit();
+		}
+		else 
+		{
+			cancelledScanDueToResultsNum = true;
+		}
+	}
+
+	if (cancelledScanDueToResultsNum)
+	{
+		ResetScan();
+		cancelledScanDueToResultsNum = false;
+		wxMessageBox("The number of results exceeded the max set in the settings.", "Scan Cancelled");
+		return;
 	}
 
 	wxString resultsStr = CommaFormatNum(results);

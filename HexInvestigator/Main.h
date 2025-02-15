@@ -131,6 +131,8 @@ public:
 	{
 		uintptr_t minAddress, maxAddress;
 
+		unsigned int maxResults;
+
 		int protection;
 		ScanType scanType;
 		int roundingValue;
@@ -160,6 +162,8 @@ public:
 	bool scanning = false;
 
 	bool performedAllScan = false;
+
+	bool cancelledScanDueToResultsNum = false;
 
 	template <typename T> unsigned int FirstScan(MemoryScanSettings scanSettings, T targetValue, T targetValue2, std::vector<uintptr_t>* addressesPtr, std::vector<unsigned char>* bytesPtr);
 	unsigned int FirstScanByteArray(MemoryScanSettings scanSettings, unsigned char* targetBytes, int size, std::vector<uintptr_t>* addressesPtr);

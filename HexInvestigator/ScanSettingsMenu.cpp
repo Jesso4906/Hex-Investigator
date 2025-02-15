@@ -10,7 +10,7 @@ EVT_CHOICE(SelectModuleID, UpdateSelectedModule)
 EVT_CHOICE(SelectKeybindID, UpdateSelectedKeybind)
 wxEND_EVENT_TABLE()
 
-ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(700, 250))
+ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID, "Scan Settings", wxPoint(50, 50), wxSize(700, 260))
 {
 	procHandle = hProc;
 	
@@ -53,6 +53,14 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	onlyScanForNullTermStrs->SetValue(false);
 	onlyScanForNullTermStrs->SetOwnForegroundColour(textColor);
 
+	maxResultsTxt = new wxStaticText(this, wxID_ANY, "Max results:");
+	maxResultsTxt->SetOwnForegroundColour(textColor);
+
+	maxResultsInput = new wxTextCtrl(this, wxID_ANY, "100000000", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
+	maxResultsInput->SetOwnBackgroundColour(foregroundColor);
+	maxResultsInput->SetOwnForegroundColour(textColor);
+	maxResultsInput->SetToolTip("If the amount of results during a scan exceeds this number, the scan will be cancelled.");
+
 	scanKeybindLabel = new wxStaticText(this, wxID_ANY, "First/next scan keybind:");
 	scanKeybindLabel->SetOwnForegroundColour(textColor);
 
@@ -64,14 +72,14 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	minAddrTxt = new wxStaticText(this, wxID_ANY, "Min address:");
 	minAddrTxt->SetOwnForegroundColour(textColor);
 
-	minAddrInput = new wxTextCtrl(this, MinAddressInputID, "0", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
+	minAddrInput = new wxTextCtrl(this, wxID_ANY, "0", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
 	minAddrInput->SetOwnBackgroundColour(foregroundColor);
 	minAddrInput->SetOwnForegroundColour(textColor);
 
 	maxAddrTxt = new wxStaticText(this, wxID_ANY, "Max address:");
 	maxAddrTxt->SetOwnForegroundColour(textColor);
 
-	maxAddrInput = new wxTextCtrl(this, MaxAddressInputID, "7fffffffffff", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
+	maxAddrInput = new wxTextCtrl(this, wxID_ANY, "7fffffffffff", wxPoint(0, 0), wxSize(200, 25), wxTE_PROCESS_ENTER);
 	maxAddrInput->SetOwnBackgroundColour(foregroundColor);
 	maxAddrInput->SetOwnForegroundColour(textColor);
 
@@ -101,6 +109,8 @@ ScanSettingsMenu::ScanSettingsMenu(HANDLE hProc) : wxFrame(nullptr, MainWindowID
 	column2Sizer->Add(alignMemory, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column2Sizer->Add(freezeProcess, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column2Sizer->Add(onlyScanForNullTermStrs, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column2Sizer->Add(maxResultsTxt, 0, wxLEFT | wxTOP | wxRIGHT, 10);
+	column2Sizer->Add(maxResultsInput, 0, wxLEFT | wxRIGHT, 10);
 
 	column3Sizer->Add(minAddrTxt, 0, wxLEFT | wxTOP | wxRIGHT, 10);
 	column3Sizer->Add(minAddrInput, 0, wxLEFT | wxRIGHT, 10);
@@ -259,6 +269,8 @@ bool ScanSettingsMenu::UpdateMinAndMax()
 	maxAddrInput->SetValue(maxToHex.str());
 
 	maxAddress = newMaxAddress;
+
+	maxResultsInput->GetValue().ToUInt(&maxResults, 10);
 
 	if (minAddress >= maxAddress)
 	{

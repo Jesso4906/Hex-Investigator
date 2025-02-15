@@ -19,6 +19,9 @@ public:
 	wxCheckBox* freezeProcess = nullptr;
 	wxCheckBox* onlyScanForNullTermStrs = nullptr;
 
+	wxStaticText* maxResultsTxt = nullptr;
+	wxTextCtrl* maxResultsInput = nullptr;
+
 	wxStaticText* minAddrTxt = nullptr;
 	wxTextCtrl* minAddrInput = nullptr;
 
@@ -45,8 +48,6 @@ public:
 		MainWindowID,
 		ProtectionsListID,
 		MemoryTypeListID,
-		MinAddressInputID,
-		MaxAddressInputID,
 		SelectModuleID,
 		SelectKeybindID
 	};
@@ -86,6 +87,8 @@ public:
 
 	uintptr_t minAddress = 0;
 	uintptr_t maxAddress = 0x7fffffffffff;
+
+	unsigned int maxResults = 100000000;
 
 	struct ModuleBounds 
 	{

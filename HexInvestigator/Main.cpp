@@ -283,6 +283,12 @@ template <typename T> unsigned int Main::FirstScan(MemoryScanSettings scanSettin
 					newBytes.insert(newBytes.end(), valueBytes, valueBytes + size);
 
 					results++;
+
+					if (results > scanSettings.maxResults)
+					{
+						cancelledScanDueToResultsNum = true;
+						return 0;
+					}
 				}
 			}
 
@@ -329,6 +335,12 @@ unsigned int Main::FirstScanByteArray(MemoryScanSettings scanSettings, unsigned 
 					{
 						newAddresses.push_back(baseAddress + i);
 						results++;
+
+						if (results > scanSettings.maxResults)
+						{
+							cancelledScanDueToResultsNum = true;
+							return 0;
+						}
 					}
 				}
 			}
@@ -376,6 +388,12 @@ template <typename T> unsigned int Main::FirstScanAll(MemoryScanSettings scanSet
 			delete[] buffer;
 
 			results += regionSize / offset;
+
+			if (results > scanSettings.maxResults)
+			{
+				cancelledScanDueToResultsNum = true;
+				return 0;
+			}
 		}
 
 		baseAddress += regionSize;
@@ -595,6 +613,7 @@ Main::MemoryScanSettings Main::CreateScanSettingsStruct()
 	MemoryScanSettings memoryScanSettings = {};
 	memoryScanSettings.minAddress = scanSettingsMenu->minAddress;
 	memoryScanSettings.maxAddress = scanSettingsMenu->maxAddress;
+	memoryScanSettings.maxResults = scanSettingsMenu->maxResults;
 	memoryScanSettings.protection = scanSettingsMenu->currentProtection;
 	memoryScanSettings.scanType = (ScanType)selectScanType->GetSelection();
 	memoryScanSettings.roundingValue = roundings[roundingPlace];
@@ -1276,6 +1295,13 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		}
 
 		memoryScanSettings.minAddress = memoryScanSettings.maxAddress;
+	}
+
+	if (cancelledScanDueToResultsNum) 
+	{
+		ResetScan();
+		cancelledScanDueToResultsNum = false;
+		return;
 	}
 
 	bool freezeDuringScan = scanSettingsMenu->freezeProcess->IsChecked();
@@ -2002,7 +2028,34 @@ void Main::RemoveRow(int row)
 {
 	addrList->DeleteRows(row);
 	addressPool.erase(addressPool.begin() + row);
-	bytes.erase(bytes.begin() + row);
+
+	if (bytes.size() > 0) 
+	{
+		ValueType valueType = (ValueType)selectValueType->GetSelection();
+		int valueSize = 1;
+		switch (valueType) 
+		{
+		case UInt64:
+		case Int64: 
+		case Double:
+			valueSize = 8;
+			break;
+		case UInt32:
+		case Int32: 
+		case Float:
+			valueSize = 4;
+			break;
+		case UInt16:
+		case Int16: 
+			valueSize = 2;
+			break;
+		case UInt8:
+		case Int8:
+			valueSize = 1;
+			break;
+		}
+		bytes.erase(bytes.begin() + row, bytes.begin() + row + valueSize);
+	}
 
 	addrList->SetCellValue(0, 1, ""); // first row's offset is nothing
 	resultsTxt->SetLabel("Results: " + std::to_string(addressPool.size()));

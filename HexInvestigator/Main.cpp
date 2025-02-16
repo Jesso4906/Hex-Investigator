@@ -1319,6 +1319,8 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 		}
 	}
 
+	if (freezeDuringScan) { FreezeProcess(false); }
+
 	if (cancelledScanDueToResultsNum)
 	{
 		ResetScan();
@@ -1343,8 +1345,6 @@ void Main::FirstScanButtonPress(wxCommandEvent& e)
 	{ 
 		addrList->AppendRows(results);
 	}
-
-	if (freezeDuringScan) { FreezeProcess(false); }
 	
 	nextScan->Enable();
 	selectValueType->Disable();
